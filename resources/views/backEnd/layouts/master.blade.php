@@ -288,12 +288,12 @@
                     <li>
                       <a href="{{route('brands.index')}}"><i data-feather="file-plus"></i> Brands</a>
                     </li>
-                    <li>
+                    {{-- <li>
                       <a href="{{route('colors.index')}}"><i data-feather="file-plus"></i> Colors</a>
                     </li>
                     <li>
                       <a href="{{route('sizes.index')}}"><i data-feather="file-plus"></i> Sizes</a>
-                    </li>
+                    </li> --}}
                     
                     <li>
                       <a href="{{route('products.price_edit')}}"><i data-feather="file-plus"></i> Price Edit</a>

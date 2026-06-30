@@ -298,26 +298,26 @@ Route::group(['namespace'=>'Admin','middleware' => ['auth','lock','check_refer']
     Route::post('brands/destroy', [BrandController::class,'destroy'])->name('brands.destroy');
 
      // color
-    Route::get('color/manage', [ColorController::class,'index'])->name('colors.index');
-    Route::get('color/{id}/show', [ColorController::class,'show'])->name('colors.show');
-    Route::get('color/create', [ColorController::class,'create'])->name('colors.create');
-    Route::post('color/save', [ColorController::class,'store'])->name('colors.store');
-    Route::get('color/{id}/edit', [ColorController::class,'edit'])->name('colors.edit');
-    Route::post('color/update', [ColorController::class,'update'])->name('colors.update');
-    Route::post('color/inactive', [ColorController::class,'inactive'])->name('colors.inactive');
-    Route::post('color/active', [ColorController::class,'active'])->name('colors.active');
-    Route::post('color/destroy', [ColorController::class,'destroy'])->name('colors.destroy');
+    // Route::get('color/manage', [ColorController::class,'index'])->name('colors.index');
+    // Route::get('color/{id}/show', [ColorController::class,'show'])->name('colors.show');
+    // Route::get('color/create', [ColorController::class,'create'])->name('colors.create');
+    // Route::post('color/save', [ColorController::class,'store'])->name('colors.store');
+    // Route::get('color/{id}/edit', [ColorController::class,'edit'])->name('colors.edit');
+    // Route::post('color/update', [ColorController::class,'update'])->name('colors.update');
+    // Route::post('color/inactive', [ColorController::class,'inactive'])->name('colors.inactive');
+    // Route::post('color/active', [ColorController::class,'active'])->name('colors.active');
+    // Route::post('color/destroy', [ColorController::class,'destroy'])->name('colors.destroy');
     
     // size
-    Route::get('size/manage', [SizeController::class,'index'])->name('sizes.index');
-    Route::get('size/{id}/show', [SizeController::class,'show'])->name('sizes.show');
-    Route::get('size/create', [SizeController::class,'create'])->name('sizes.create');
-    Route::post('size/save', [SizeController::class,'store'])->name('sizes.store');
-    Route::get('size/{id}/edit', [SizeController::class,'edit'])->name('sizes.edit');
-    Route::post('size/update', [SizeController::class,'update'])->name('sizes.update');
-    Route::post('size/inactive', [SizeController::class,'inactive'])->name('sizes.inactive');
-    Route::post('size/active', [SizeController::class,'active'])->name('sizes.active');
-    Route::post('size/destroy', [SizeController::class,'destroy'])->name('sizes.destroy');
+    // Route::get('size/manage', [SizeController::class,'index'])->name('sizes.index');
+    // Route::get('size/{id}/show', [SizeController::class,'show'])->name('sizes.show');
+    // Route::get('size/create', [SizeController::class,'create'])->name('sizes.create');
+    // Route::post('size/save', [SizeController::class,'store'])->name('sizes.store');
+    // Route::get('size/{id}/edit', [SizeController::class,'edit'])->name('sizes.edit');
+    // Route::post('size/update', [SizeController::class,'update'])->name('sizes.update');
+    // Route::post('size/inactive', [SizeController::class,'inactive'])->name('sizes.inactive');
+    // Route::post('size/active', [SizeController::class,'active'])->name('sizes.active');
+    // Route::post('size/destroy', [SizeController::class,'destroy'])->name('sizes.destroy');
    
    
     // product
