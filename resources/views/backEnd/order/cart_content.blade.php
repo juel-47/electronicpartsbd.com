@@ -31,7 +31,7 @@
 
   <td>
     @if($value->options->is_deleted == '0')
-    <button type="button" onclick="removeItem(this)" class="btn btn-danger btn-xs cart_removell" data-id="{{$value->rowId}}"><i class="fa fa-times"></i></button>
+    <button type="button" class="btn btn-danger btn-xs cart_remove" data-id="{{$value->rowId}}"><i class="fa fa-times"></i></button>
     @endif
   </td>
 </tr>
@@ -100,7 +100,7 @@
           });
         }
    });
-    $(".cart_remove").click(function(e){
+    $(document).on('click', '.cart_remove', function(e){
         e.preventDefault();
         var id = $(this).data("id");
         if(id){

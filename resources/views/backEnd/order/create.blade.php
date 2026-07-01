@@ -270,7 +270,7 @@
    });
   }
  });
- $(".cart_remove").click(function (e) {
+ $(document).on('click', '.cart_remove', function (e) {
   e.preventDefault();
   var id = $(this).data("id");
   if (id) {

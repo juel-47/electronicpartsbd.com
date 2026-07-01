@@ -660,7 +660,7 @@ class OrderController extends Controller
  
          // order data save
         $order                   =  Order::where('id',$request->order_id)->first();
-        $order->invoice_id       = rand(11111,99999);
+        // $order->invoice_id       = rand(11111,99999);
         $order->amount           = ($subtotal + $shippingfee->amount) - $discount;
         $order->discount         = $discount ? $discount : 0;
         $order->shipping_charge  = $shippingfee->amount;
