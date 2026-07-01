@@ -87,17 +87,17 @@
                                             <li><a href="{{ url('/') }}">Home</a></li>
                                             <li><span>/</span></li>
                                             <li><a
-                                                    href="{{ url('public/category/' . $details->category->slug) }}">{{ $details->category->name }}</a>
+                                                    href="{{ url('category/' . $details->category->slug) }}">{{ $details->category->name }}</a>
                                             </li>
                                             @if ($details->subcategory)
                                                 <li><span>/</span></li>
                                                 <li><a
-                                                        href="#">{{ $details->subcategory ? $details->subcategory->subcategoryName : '' }}</a>
+                                                        href="{{ url('subcategory/' . $details->subcategory->slug) }}">{{ $details->subcategory->subcategoryName }}</a>
                                                 </li>
                                                 @endif @if ($details->childcategory)
                                                     <li><span>/</span></li>
                                                     <li><a
-                                                            href="#">{{ $details->childcategory->childcategoryName }}</a>
+                                                            href="{{ url('products/' . $details->childcategory->slug) }}">{{ $details->childcategory->childcategoryName }}</a>
                                                     </li>
                                                 @endif
                                         </ul>
