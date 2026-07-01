@@ -349,7 +349,17 @@
                                                                     </a>
                                                                     <ul class="child_menu">
                                                                         @foreach($scategory->subcategories as $subcategory)
-                                                                        <li class="child_main"><a href="{{url('subcategory/'.$subcategory->slug)}}">        {{$subcategory->subcategoryName}}</a></li> 
+                                                                        <li class="child_main">
+                                                                            <a href="{{url('subcategory/'.$subcategory->slug)}}">{{$subcategory->subcategoryName}}</a>
+                                                                            @if($subcategory->childcategories->count() > 0)
+                                                                            <i class="fa-solid fa-chevron-right" style="position:absolute;right:8px;top:8px;font-size:10px;"></i>
+                                                                            <ul class="child_sub_menu">
+                                                                                @foreach($subcategory->childcategories as $childcat)
+                                                                                <li><a href="{{url('products/'.$childcat->slug)}}">{{$childcat->childcategoryName}}</a></li>
+                                                                                @endforeach
+                                                                            </ul>
+                                                                            @endif
+                                                                        </li> 
                                                                         @endforeach
                                                                     </ul>
                                                                 </li>

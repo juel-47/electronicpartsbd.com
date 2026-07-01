@@ -313,7 +313,13 @@ class FrontendController extends Controller
             ->with('image');
 
         if ($request->keyword) {
-            $products = $products->where('name', 'LIKE', '%' . $request->keyword . "%");
+            $words = preg_split('/\s+/', trim($request->keyword));
+            $products = $products->where(function($q) use ($words) {
+                foreach ($words as $word) {
+                    $q->orWhere('name', 'LIKE', '%'.$word.'%')
+                      ->orWhere('sku', 'LIKE', '%'.$word.'%');
+                }
+            });
         }
 
         if ($request->category) {
@@ -321,9 +327,9 @@ class FrontendController extends Controller
         }
 
         if (empty($request->category) && empty($request->keyword)) {
-            $products = collect(); // empty collection
+            $products = collect();
         } else {
-            $products = $products->limit(10)->get(); // ✅ limit applied here
+            $products = $products->limit(20)->get();
         }
 
         return view('frontEnd.layouts.ajax.search', compact('products'));
@@ -335,7 +341,13 @@ class FrontendController extends Controller
             ->where('status', 1)
             ->with('image');
         if ($request->keyword) {
-            $products = $products->where('name', 'LIKE', '%' . $request->keyword . "%");
+            $words = preg_split('/\s+/', trim($request->keyword));
+            $products = $products->where(function($q) use ($words) {
+                foreach ($words as $word) {
+                    $q->orWhere('name', 'LIKE', '%'.$word.'%')
+                      ->orWhere('sku', 'LIKE', '%'.$word.'%');
+                }
+            });
         }
         if ($request->category) {
             $products = $products->where('category_id', $request->category);
