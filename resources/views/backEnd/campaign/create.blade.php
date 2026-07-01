@@ -403,8 +403,9 @@
                         <div class="form-group">
                             <label for="status" class="d-block">Status</label>
                             <label class="switch">
-                              <input type="checkbox" value="1" name="status" checked>
-                              <span class="slider round"></span>
+                                <input type="hidden" name="status" value="0">
+                                <input type="checkbox" value="1" name="status" checked>
+                                <span class="slider round"></span>
                             </label>
                             @error('status')
                                 <span class="invalid-feedback" role="alert">

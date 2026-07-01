@@ -50,7 +50,7 @@ class CampaignController extends Controller
 			'details_text5' => 'required',
 			'details_text6' => 'required',
 			'short_details' => 'required',
-            'status' => 'required',
+            'status' => 'in:0,1',
             'image_one' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'image_two' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'image_three' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
@@ -183,10 +183,9 @@ class CampaignController extends Controller
     public function edit($id)
     {
         $edit_data = Campaign::with('images')->find($id);
-        $select_products = Product::where('is_deleted',0)->where('campaign_id',$id)->get();
         $show_data = Campaign::orderBy('id','DESC')->get();
         $products = Product::where('is_deleted',0)->where(['status'=>1])->select('id','name','status')->get();
-        return view('backEnd.campaign.edit',compact('edit_data','products','select_products'));
+        return view('backEnd.campaign.edit',compact('edit_data','products'));
     }
     
     public function update(Request $request)
@@ -214,7 +213,7 @@ class CampaignController extends Controller
 			'details_text6' => 'required',
 			'short_details' => 'required',
 
-            'status' => 'required',
+            'status' => 'in:0,1',
         ]);
         // image one
         $update_data = Campaign::find($request->hidden_id);
