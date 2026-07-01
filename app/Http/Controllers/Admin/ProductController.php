@@ -144,10 +144,29 @@ class ProductController extends Controller
         $selectsizes = Productsize::where('product_id',$id)->get();
         return view('backEnd.product.edit',compact('edit_data','categories', 'subcategory', 'childcategory', 'brands', 'selectcolors', 'selectsizes','totalsizes', 'totalcolors'));
     }
-    public function price_edit()
+    public function price_edit(Request $request)
     {
-        $products = DB::table('products')->select('id','name','status','old_price','new_price','stock')->where('status',1)->get();;
-        return view('backEnd.product.price_edit',compact('products'));
+        $products = Product::select('id','name','sku','status','old_price','new_price','stock','category_id','subcategory_id','childcategory_id')->where('status',1);
+
+        if ($request->keyword) {
+            $products = $products->where(function($q) use ($request) {
+                $q->where('name', 'LIKE', '%'.$request->keyword.'%')
+                  ->orWhere('sku', 'LIKE', '%'.$request->keyword.'%');
+            });
+        }
+        if ($request->category_id) {
+            $products = $products->where('category_id', $request->category_id);
+        }
+        if ($request->subcategory_id) {
+            $products = $products->where('subcategory_id', $request->subcategory_id);
+        }
+        if ($request->childcategory_id) {
+            $products = $products->where('childcategory_id', $request->childcategory_id);
+        }
+
+        $products = $products->get();
+        $categories = Category::where('status',1)->select('id','name')->get();
+        return view('backEnd.product.price_edit',compact('products','categories'));
     }
     public function price_update(Request $request)
     {

@@ -18,33 +18,93 @@
    <div class="row">
     <div class="col-12">
         <div class="card">
-            <form action="{{route('products.price_update')}}" method="POST">
-                @csrf
             <div class="card-body">
+                <!-- Search / Filter Form -->
+                <form method="GET" action="{{route('products.price_edit')}}" class="row mb-3">
+                    <div class="col-sm-12">
+                        
+                        <div class="row">
+                            <div class="col-sm-4">
+                                <div class="form-group mb-2">
+                                    <select name="category_id" id="category_id" class="form-control">
+                                        <option value="">All Categories</option>
+                                        @foreach($categories as $category)
+                                        <option value="{{$category->id}}" {{request('category_id')==$category->id?'selected':''}}>{{$category->name}}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group mb-2">
+                                    <select name="subcategory_id" id="subcategory_id" class="form-control">
+                                        <option value="">All Subcategories</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group mb-2">
+                                    <select name="childcategory_id" id="childcategory_id" class="form-control">
+                                        <option value="">All Childcategories</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-4"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-9">
+                                <div class="form-group mb-2">
+                                    <input type="text" name="keyword" class="form-control" placeholder="Search by name or SKU" value="{{request('keyword')}}">
+                                </div>
+                            </div>
+                            {{-- <div class="col-sm-4">
+                                <div class="form-group mb-2">
+                                    <select name="category_id" id="category_id" class="form-control">
+                                        <option value="">All Categories</option>
+                                        @foreach($categories as $category)
+                                        <option value="{{$category->id}}" {{request('category_id')==$category->id?'selected':''}}>{{$category->name}}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div> --}}
+                            <div class="col-sm-3 text-end">
+                                <button type="submit" class="btn btn-info rounded-pill"><i class="fe-search"></i> Search</button>
+                                <a href="{{route('products.price_edit')}}" class="btn btn-secondary rounded-pill"><i class="fe-x"></i> Clear</a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <form action="{{route('products.price_update')}}" method="POST">
+                @csrf
                 <div class="table-responsive">
                     <table class="table nowrap w-100">
                     <thead>
                         <tr>
                             <th style="width:5%">SL</th>
-                                    </div></th>
-                            <th style="width:50%">Name</th>
+                            <th style="width:40%">Name</th>
+                            <th style="width:10%">SKU</th>
                             <th style="width:15%">Old Price</th>
                             <th style="width:15%">New Price</th>
-                            <th style="width:15%">Stock</th></th>
+                            <th style="width:15%">Stock</th>
                         </tr>
                     </thead>               
                 
                     <tbody>
-                        @foreach($products as $key=>$value)
+                        @forelse($products as $key=>$value)
                         <tr>
                             <td>{{$loop->iteration}}</td>
                             <input type="hidden" value="{{$value->id}}" name="ids[]">
                             <td>{{$value->name}}</td>
+                            <td>{{$value->sku}}</td>
                             <td><input value="{{$value->old_price}}" name="old_price[]"></td>
                             <td><input value="{{$value->new_price}}" name="new_price[]"></td>
                             <td><input value="{{$value->stock}}" name="stock[]"></td>
                         </tr>
-                        @endforeach
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center">No products found</td>
+                        </tr>
+                        @endforelse
                      </tbody>
                      <tfoot>
                          <tr>
@@ -56,98 +116,80 @@
                      </tfoot>
                     </table>
                 </div>
+                </form>
             </div> <!-- end card body-->
-            </form>
         </div> <!-- end card -->
     </div><!-- end col-->
    </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+@endsection
+@section('script')
 <script>
 $(document).ready(function(){
-    $(".checkall").on('change',function(){
-      $(".checkbox").prop('checked',$(this).is(":checked"));
-    });
-    
-    $(document).on('click', '.hotdeal_update', function(e){
-        e.preventDefault();
-        var url = $(this).attr('href');
-        console.log('url',url);
-        var product = $('input.checkbox:checked').map(function(){
-          return $(this).val();
-        });
-        var product_ids=product.get();
-        if(product_ids.length ==0){
-            toastr.error('Please Select A Product First !');
-            return ;
+    function loadSubcategories(categoryId, selectedId) {
+        if (categoryId) {
+            $.ajax({
+                type: "GET",
+                url: "{{url('ajax-product-subcategory')}}?category_id=" + categoryId,
+                success: function (res) {
+                    $("#subcategory_id").empty();
+                    $("#subcategory_id").append('<option value="">All Subcategories</option>');
+                    $.each(res, function (key, value) {
+                        var selected = (key == selectedId) ? 'selected' : '';
+                        $("#subcategory_id").append('<option value="' + key + '" ' + selected + '>' + value + "</option>");
+                    });
+                    $("#subcategory_id").trigger('change');
+                }
+            });
+        } else {
+            $("#subcategory_id").empty();
+            $("#subcategory_id").append('<option value="">All Subcategories</option>');
+            $("#childcategory_id").empty();
+            $("#childcategory_id").append('<option value="">All Childcategories</option>');
         }
-        $.ajax({
-           type:'GET',
-           url:url,
-           data:{product_ids},
-           success:function(res){
-               if(res.status=='success'){
-                toastr.success(res.message);
-                window.location.reload();
-            }else{
-                toastr.error('Failed something wrong');
-            }
-           }
-        });
-    });
-    $(document).on('click', '.update_status', function(e){
-        e.preventDefault();
-        var url = $(this).attr('href');
-        var product = $('input.checkbox:checked').map(function(){
-          return $(this).val();
-        });
-        var product_ids=product.get();
-        if(product_ids.length ==0){
-            toastr.error('Please Select A Product First !');
-            return ;
+    }
+
+    function loadChildcategories(subcategoryId, selectedId) {
+        if (subcategoryId) {
+            $.ajax({
+                type: "GET",
+                url: "{{url('ajax-product-childcategory')}}?subcategory_id=" + subcategoryId,
+                success: function (res) {
+                    $("#childcategory_id").empty();
+                    $("#childcategory_id").append('<option value="">All Childcategories</option>');
+                    $.each(res, function (key, value) {
+                        var selected = (key == selectedId) ? 'selected' : '';
+                        $("#childcategory_id").append('<option value="' + key + '" ' + selected + '>' + value + "</option>");
+                    });
+                }
+            });
+        } else {
+            $("#childcategory_id").empty();
+            $("#childcategory_id").append('<option value="">All Childcategories</option>');
         }
-        $.ajax({
-           type:'GET',
-           url:url,
-           data:{product_ids},
-           success:function(res){
-               if(res.status=='success'){
-                toastr.success(res.message);
-                window.location.reload();
-            }else{
-                toastr.error('Failed something wrong');
-            }
-           }
-        });
+    }
+
+    var selectedCategory = "{{request('category_id')}}";
+    var selectedSubcategory = "{{request('subcategory_id')}}";
+    var selectedChildcategory = "{{request('childcategory_id')}}";
+
+    if (selectedCategory) {
+        loadSubcategories(selectedCategory, selectedSubcategory);
+    }
+    if (selectedSubcategory) {
+        loadChildcategories(selectedSubcategory, selectedChildcategory);
+    }
+
+    $("#category_id").on("change", function () {
+        var categoryId = $(this).val();
+        loadSubcategories(categoryId, '');
     });
-    $(document).on('click', '.update_status', function(e){
-        e.preventDefault();
-        var url = $(this).attr('href');
-        var product = $('input.checkbox:checked').map(function(){
-          return $(this).val();
-        });
-        var product_ids=product.get();
-        if(product_ids.length ==0){
-            toastr.error('Please Select A Product First !');
-            return ;
-        }
-        $.ajax({
-           type:'GET',
-           url:url,
-           data:{product_ids},
-           success:function(res){
-               if(res.status=='success'){
-                toastr.success(res.message);
-                window.location.reload();
-            }else{
-                toastr.error('Failed something wrong');
-            }
-           }
-        });
+
+    $("#subcategory_id").on("change", function () {
+        var subcategoryId = $(this).val();
+        loadChildcategories(subcategoryId, '');
     });
-    
-    
 })
 </script>
 @endsection
