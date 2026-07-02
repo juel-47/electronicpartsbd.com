@@ -14,26 +14,29 @@
     td{
         font-size: 16px;
     }
-   @page { 
-    margin:0px;
-    }
-   @media print {
-    .invoice-innter{
-        margin-left: -120px !important;
-    }
-    .invoice_btn{
-        margin-bottom: 0 !important;
-    }
-    td{
-        font-size: 18px;
-    }
-    p{
-        margin:0;
-    }
-    header,footer,.no-print,.left-side-menu,.navbar-custom {
-      display: none !important;
-    }
-  }
+    @page { 
+     margin:0px;
+     }
+    @media print {
+     .invoice-innter{
+         margin-left: -120px !important;
+     }
+     .invoice_btn{
+         margin-bottom: 0 !important;
+     }
+     td{
+         font-size: 18px;
+     }
+     .cost-col{
+         display: none !important;
+     }
+     p{
+         margin:0;
+     }
+     header,footer,.no-print,.left-side-menu,.navbar-custom {
+       display: none !important;
+     }
+   }
 </style>
 <section class="customer-invoice ">
     <div class="container">
@@ -82,6 +85,7 @@
                             <tr>
                                 <th>SL</th>
                                 <th>Product</th>
+                                <th class="cost-col">Cost</th>
                                 <th>Price</th>
                                 <th>Qty</th>
                                 <th>Total</th>
@@ -92,6 +96,7 @@
                             <tr>
                                 <td>{{$loop->iteration}}</td>
                                 <td>{{$value->product_name}} <br> @if($value->product_size) <small>Size: {{$value->product_size}}</small> @endif   @if($value->product_color) <small>Color: {{$value->product_color}}</small> @endif </td>
+                                <td class="cost-col">৳{{$value->purchase_price}}</td>
                                 <td>৳{{$value->sale_price}}</td>
                                 <td>{{$value->qty}}</td>
                                 <td>৳{{$value->sale_price*$value->qty}}</td>
