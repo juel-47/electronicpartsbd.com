@@ -1,6 +1,5 @@
- @php
+@php
   $product_discount = 0;
-  Session::put('product_discount','0');
 @endphp
 @foreach($cartinfo as $key=>$value)
 <tr style="{{$value->options->is_deleted == '1' ? 'background:#dbd7d7;' : ''}}">
@@ -46,13 +45,16 @@
 @endforeach
 
 <script>
+    var current_instance = typeof cart_instance !== 'undefined' ? cart_instance : 'pos_shopping';
+
     function cart_content(){
            $.ajax({
              type:"GET",
              url:"{{route('admin.order.cart_content')}}",
+             data: { cart_instance: current_instance },
              dataType: "html",
              success: function(cartinfo){
-               $('#cartTable').html(cartinfo)
+                $('#cartTable').html(cartinfo)
              }
           });
       }
@@ -60,9 +62,10 @@
            $.ajax({
              type:"GET",
              url:"{{route('admin.order.cart_details')}}",
+             data: { cart_instance: current_instance },
              dataType: "html",
              success: function(cartinfo){
-               $('#cart_details').html(cartinfo)
+                $('#cart_details').html(cartinfo)
              }
           });
       }
@@ -73,7 +76,7 @@
         if(id){
               $.ajax({
                cache: false,
-               data:{'id':id,'qty':qty},
+               data:{'id':id,'qty':qty, cart_instance: current_instance},
                type:"GET",
                url:"{{route('admin.order.cart_increment')}}",
                dataType: "json",
@@ -91,7 +94,7 @@
               $.ajax({
                cache: false, 
                type:"GET",
-               data:{'id':id,'qty':qty},
+               data:{'id':id,'qty':qty, cart_instance: current_instance},
                url:"{{route('admin.order.cart_decrement')}}",
                dataType: "json",
             success: function(cartinfo){
@@ -107,7 +110,7 @@
               $.ajax({
                cache: false,
                type:"GET",
-               data:{'id':id},
+               data:{'id':id, cart_instance: current_instance},
                url:"{{route('admin.order.cart_remove')}}",
                dataType: "json",
               success: function(cartinfo){
@@ -116,13 +119,13 @@
           });
         }
    });
-   $(".product_discount").change(function(){
+   $(document).on("change", ".product_discount", function(){
         var id = $(this).data("id");
         var discount = $(this).val();
           $.ajax({
            cache: false,
            type:"GET",
-           data:{'id':id,'discount':discount},
+           data:{'id':id,'discount':discount, cart_instance: current_instance},
            url:"{{route('admin.order.product_discount')}}",
            dataType: "json",
           success: function(cartinfo){
@@ -134,18 +137,19 @@
       $.ajax({
            cache: false,
            type:"GET",
+           data: { cart_instance: current_instance },
            url:"{{route('admin.order.cart_clear')}}",
            dataType: "json",
           success: function(cartinfo){
             return cart_content()+cart_details();
           }
-       });
+        });
    });// pshippingfee from total
     $("#area").on("change", function () {
         var id = $(this).val();
         $.ajax({
             type: "GET",
-            data: { id: id },
+            data: { id: id, cart_instance: current_instance },
             url: "{{route('admin.order.cart_shipping')}}",
             dataType: "html",
             success: function(cartinfo){

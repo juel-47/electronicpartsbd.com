@@ -15,6 +15,7 @@ use App\Models\OrderDetails;
 use App\Models\Payment;
 use App\Models\Shipping;
 use App\Models\Review;
+use App\Models\Product;
 use App\Models\PaymentGateway;
 use App\Models\SmsGateway;
 use App\Models\GeneralSetting;

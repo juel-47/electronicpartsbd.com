@@ -20,6 +20,7 @@
                 <div class="page-title-right">
                     <form method="post" action="{{route('admin.order.cart_clear')}}" class="d-inline">
                         @csrf
+                        <input type="hidden" value="pos_shopping_edit_{{$order->id}}" name="cart_instance">
                     <button type="submit" class="btn btn-danger rounded-pill delete-confirm" title="Delete"><i class="fas fa-trash-alt"></i> Cart Clear</button></form>
                 </div>
                 <h4 class="page-title">Order Create</h4>
@@ -34,6 +35,7 @@
                     <form action="{{route('admin.order.update')}}" method="POST" class="row pos_form" data-parsley-validate="" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" value="{{$order->id}}" name="order_id">
+                        <input type="hidden" value="pos_shopping_edit_{{$order->id}}" name="cart_instance">
                         <div class="col-sm-12">
                             <div class="form-group mb-3">
                                 <label for="product_id" class="form-label">Products *</label>
@@ -165,10 +167,13 @@
     });
 </script>
 <script>
+    var cart_instance = 'pos_shopping_edit_{{$order->id}}';
+
     function cart_content(){
            $.ajax({
              type:"GET",
              url:"{{route('admin.order.cart_content')}}",
+             data: { cart_instance: cart_instance },
              dataType: "html",
              success: function(cartinfo){
                $('#cartTable').html(cartinfo)
@@ -179,6 +184,7 @@
            $.ajax({
              type:"GET",
              url:"{{route('admin.order.cart_details')}}",
+             data: { cart_instance: cart_instance },
              dataType: "html",
              success: function(cartinfo){
                $('#cart_details').html(cartinfo)
@@ -192,7 +198,7 @@
             $.ajax({
             cache: 'false',
             type:"GET",
-            data:{'id':id},
+            data:{'id':id, cart_instance: cart_instance},
             url:"{{route('admin.order.cart_add')}}",
             dataType: "json",
             success: function(cartinfo){
@@ -208,7 +214,7 @@
         if(id){
               $.ajax({
                cache: false,
-               data:{'id':id,'qty':qty},
+               data:{'id':id,'qty':qty, cart_instance: cart_instance},
                type:"GET",
                url:"{{route('admin.order.cart_increment')}}",
                dataType: "json",
@@ -226,7 +232,7 @@
               $.ajax({
                cache: false, 
                type:"GET",
-               data:{'id':id,'qty':qty},
+               data:{'id':id,'qty':qty, cart_instance: cart_instance},
                url:"{{route('admin.order.cart_decrement')}}",
                dataType: "json",
             success: function(cartinfo){
@@ -242,7 +248,7 @@
               $.ajax({
                cache: false,
                type:"GET",
-               data:{'id':id},
+               data:{'id':id, cart_instance: cart_instance},
                url:"{{route('admin.order.cart_remove')}}",
                dataType: "json",
               success: function(cartinfo){
@@ -257,7 +263,7 @@
           $.ajax({
            cache: false,
            type:"GET",
-           data:{'id':id,'discount':discount},
+           data:{'id':id,'discount':discount, cart_instance: cart_instance},
            url:"{{route('admin.order.product_discount')}}",
            dataType: "json",
           success: function(cartinfo){
@@ -269,18 +275,19 @@
       $.ajax({
            cache: false,
            type:"GET",
+           data: { cart_instance: cart_instance },
            url:"{{route('admin.order.cart_clear')}}",
            dataType: "json",
           success: function(cartinfo){
             return cart_content()+cart_details();
           }
-       });
+        });
    });// pshippingfee from total
     $("#area").on("change", function () {
         var id = $(this).val();
         $.ajax({
             type: "GET",
-            data: { id: id },
+            data: { id: id, cart_instance: cart_instance },
             url: "{{route('admin.order.cart_shipping')}}",
             dataType: "html",
             success: function(cartinfo){

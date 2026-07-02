@@ -1,6 +1,7 @@
 @php
-    //$subtotal = Cart::instance('pos_shopping')->subtotal();
-    $subtotal = Cart::instance('pos_shopping')->content()->filter(fn($item) => $item->options->is_deleted == 0)->sum(fn($item) => $item->qty * $item->price);
+    $instance = request('cart_instance', 'pos_shopping');
+    //$subtotal = Cart::instance($instance)->subtotal();
+    $subtotal = Cart::instance($instance)->content()->filter(fn($item) => $item->options->is_deleted == 0)->sum(fn($item) => $item->qty * $item->price);
     $subtotal = str_replace(',','',$subtotal);
     $subtotal = str_replace('.00', '',$subtotal);
     $shipping = Session::get('pos_shipping');

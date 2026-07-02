@@ -741,7 +741,7 @@
         <!-- quick view end -->
         <!-- cart js start -->
         <script>
-            $(".addcartbutton").on("click", function () {
+            $(document).on("click", ".addcartbutton", function () {
                 var id = $(this).data("id");
                 var qty = 1;
                 if (id) {
@@ -761,7 +761,7 @@
                     });
                 }
             });
-            $(".cart_store").on("click", function () {
+            $(document).on("click", ".cart_store", function () {
                 var id = $(this).data("id");
                 var qty = $(this).parent().find("input").val();
                 if (id) {

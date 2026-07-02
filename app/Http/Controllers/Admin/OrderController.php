@@ -368,7 +368,7 @@ class OrderController extends Controller
 
     public function order_create(){
         $products = Product::where('is_deleted',0)->select('id','name','new_price','product_code')->where(['status'=>1])->get();
-        $cartinfo  = Cart::instance('pos_shopping')->content();
+        $cartinfo  = Cart::instance($this->getCartInstance())->content();
         $shippingcharge = ShippingCharge::where('status',1)->get();
         return view('backEnd.order.create',compact('products','cartinfo','shippingcharge'));
     }
@@ -381,13 +381,13 @@ class OrderController extends Controller
             'area'=>'required',
         ]);
 
-        if(Cart::instance('pos_shopping')->count() <= 0) {
+        if(Cart::instance($this->getCartInstance())->count() <= 0) {
             Toastr::error('Your shopping empty', 'Failed!');
             return redirect()->back();
         }
 
         // $subtotal = Cart::instance('pos_shopping')->subtotal();
-        $subtotal = Cart::instance('pos_shopping')->content()->filter(fn($item) => $item->options->is_deleted == 0)->sum(fn($item) => $item->qty * $item->price);
+        $subtotal = Cart::instance($this->getCartInstance())->content()->filter(fn($item) => $item->options->is_deleted == 0)->sum(fn($item) => $item->qty * $item->price);
         $subtotal = str_replace(',','',$subtotal);
         $subtotal = str_replace('.00', '',$subtotal);
         $discount = Session::get('pos_discount')+Session::get('product_discount');
@@ -440,7 +440,7 @@ class OrderController extends Controller
         $payment->save();
 
        // order details data save
-        foreach(Cart::instance('pos_shopping')->content() as $cart){
+        foreach(Cart::instance($this->getCartInstance())->content() as $cart){
             $order_details                   =   new OrderDetails();
             $order_details->order_id         =   $order->id;
             $order_details->product_id       =   $cart->id;
@@ -451,7 +451,7 @@ class OrderController extends Controller
             $order_details->qty              =   $cart->qty;
             $order_details->save();
         }
-        Cart::instance('pos_shopping')->destroy();
+        Cart::instance($this->getCartInstance())->destroy();
         Session::forget('pos_shipping');
         Session::forget('pos_discount');
         Session::forget('product_discount');
@@ -488,7 +488,7 @@ class OrderController extends Controller
             return response()->json(['error' => 'Product not found'], 404);
         }
 
-        $cartInstance = Cart::instance('pos_shopping');
+        $cartInstance = Cart::instance($this->getCartInstance());
         $cartItem = $cartInstance->search(function ($cartItem, $rowId) use ($product) {
             return $cartItem->id === $product->id;
         })->first();
@@ -519,11 +519,11 @@ class OrderController extends Controller
         return response()->json(compact('cartinfo'));
     }
     public function cart_content(){
-        $cartinfo = Cart::instance('pos_shopping')->content()->sortBy('id');
+        $cartinfo = Cart::instance($this->getCartInstance())->content()->sortBy('id');
         return view('backEnd.order.cart_content',compact('cartinfo'));
     }
     public function cart_details(){
-        $cartinfo = Cart::instance('pos_shopping')->content();
+        $cartinfo = Cart::instance($this->getCartInstance())->content();
         $discount = 0;
         foreach($cartinfo as $cart){
             if($cart->options->is_deleted == '0'){
@@ -535,33 +535,33 @@ class OrderController extends Controller
     }
     public function cart_increment(Request $request){
         $qty = $request->qty + 1;
-        $cartinfo = Cart::instance('pos_shopping')->update($request->id, $qty);
+        $cartinfo = Cart::instance($this->getCartInstance())->update($request->id, $qty);
         return response()->json($cartinfo);
     }
     public function cart_decrement(Request $request){
         $qty = $request->qty - 1;
-        $cartinfo = Cart::instance('pos_shopping')->update($request->id, $qty);
+        $cartinfo = Cart::instance($this->getCartInstance())->update($request->id, $qty);
         return response()->json($cartinfo);
     }
     public function cart_remove(Request $request){
         //$remove = Cart::instance('pos_shopping')->remove($request->id);
        
 
-        $cartInstance = Cart::instance('pos_shopping');
+        $cartInstance = Cart::instance($this->getCartInstance());
         $cartItem = $cartInstance->content()->where('rowId', $request->id)->first();
         $cartInstance->update($request->id, [
             'options' => $cartItem->options->merge(['is_deleted' => 1]),
         ]);
 
-        $cartinfo = Cart::instance('pos_shopping')->content();
+        $cartinfo = Cart::instance($this->getCartInstance())->content();
 
         return response()->json($cartinfo);
     }
     public function product_discount(Request $request){
         // return  $cartinfo = Cart::instance('pos_shopping')->content();
         $discount = $request->discount;
-        $cart = Cart::instance('pos_shopping')->content()->where('rowId', $request->id)->first();
-        $cartinfo = Cart::instance('pos_shopping')->update($request->id, [
+        $cart = Cart::instance($this->getCartInstance())->content()->where('rowId', $request->id)->first();
+        $cartinfo = Cart::instance($this->getCartInstance())->update($request->id, [
             'options' => [
                 'rowId' => $request->id,
                 'slug' => $cart->options->slug,
@@ -583,7 +583,7 @@ class OrderController extends Controller
     }
 
     public function cart_clear(Request $request){
-        $cartinfo = Cart::instance('pos_shopping')->destroy();
+        $cartinfo = Cart::instance($this->getCartInstance())->destroy();
         Session::forget('pos_shipping');
         Session::forget('pos_discount');
         Session::forget('product_discount');
@@ -594,13 +594,14 @@ class OrderController extends Controller
         $products = Product::where('is_deleted',0)->select('id','name','new_price','product_code')->where(['status'=>1])->get();
         $shippingcharge = ShippingCharge::where('status',1)->get();
         $order = Order::where('invoice_id',$invoice_id)->first();
-        $cartinfo  = Cart::instance('pos_shopping')->destroy();
+        $cartinfo  = Cart::instance('pos_shopping_edit_' . $order->id)->destroy();
         $shippinginfo  = Shipping::where('order_id',$order->id)->first();
         Session::put('product_discount',$order->discount);
+        // Session::forget('pos_discount');
         Session::put('pos_shipping',$order->shipping_charge);
         $orderdetails = OrderDetails::where('order_id',$order->id)->get();
         foreach($orderdetails as $ordetails){
-            $cartinfo = Cart::instance('pos_shopping')->add([
+            $cartinfo = Cart::instance('pos_shopping_edit_' . $order->id)->add([
                 'id' => $ordetails->product_id,
                 'name' => $ordetails->product_name,
                 'qty' => $ordetails->qty,
@@ -615,7 +616,7 @@ class OrderController extends Controller
                 
             ]);
         }
-        $cartinfo  = Cart::instance('pos_shopping')->content();
+        $cartinfo  = Cart::instance('pos_shopping_edit_' . $order->id)->content();
         return view('backEnd.order.edit',compact('products','cartinfo','shippingcharge','shippinginfo','order'));
     }
     
@@ -630,13 +631,15 @@ class OrderController extends Controller
             'area'=>'required',
         ]);
 
-        if(Cart::instance('pos_shopping')->count() <= 0) {
+        $instance = $request->get('cart_instance', 'pos_shopping_edit_' . $request->order_id);
+
+        if(Cart::instance($instance)->count() <= 0) {
             Toastr::error('Your shopping empty', 'Failed!');
             return redirect()->back();
         }
 
         // $subtotal = Cart::instance('pos_shopping')->subtotal();
-        $subtotal = Cart::instance('pos_shopping')->content()->filter(fn($item) => $item->options->is_deleted == 0)->sum(fn($item) => $item->qty * $item->price);
+        $subtotal = Cart::instance($instance)->content()->filter(fn($item) => $item->options->is_deleted == 0)->sum(fn($item) => $item->qty * $item->price);
         $subtotal = str_replace(',','',$subtotal);
         $subtotal = str_replace('.00', '',$subtotal);
         $discount = Session::get('pos_discount')+Session::get('product_discount');
@@ -697,7 +700,7 @@ class OrderController extends Controller
         // OrderDetails::where('order_id', $order->id)->whereNotIn('id', $detailsIds)->delete();
 
        // order details data save
-        foreach(Cart::instance('pos_shopping')->content() as $cart){
+        foreach(Cart::instance($instance)->content() as $cart){
             $exits = OrderDetails::where('id',$cart->options->details_id)->first();
             if($exits){
                 $order_details                   =   OrderDetails::find($exits->id);
@@ -722,12 +725,18 @@ class OrderController extends Controller
             }
             
         }
-        Cart::instance('pos_shopping')->destroy();
+        $instance = request()->get('cart_instance', 'pos_shopping_edit_' . $request->order_id);
+        Cart::instance($instance)->destroy();
         Session::forget('pos_shipping');
         Session::forget('pos_discount');
         Session::forget('product_discount');
         Toastr::success('Thanks, Your order place successfully', 'Success!');
         return redirect()->route('admin.order.edit', $order->invoice_id);
+    }
+
+    private function getCartInstance()
+    {
+        return request()->get('cart_instance', 'pos_shopping');
     }
 
 }

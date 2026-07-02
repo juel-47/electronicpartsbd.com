@@ -76,7 +76,7 @@ class ShoppingController extends Controller
             'options' => [
                 'slug' => $product->slug,
                 'image' => $product->image->image,
-                'old_price' => $product->new_price,
+                'old_price' => $product->old_price,
                 'purchase_price' => $product->purchase_price,
                 'product_size'=>$request->product_size,
                 'product_color'=>$request->product_color,
