@@ -219,16 +219,20 @@
                                                                     <span class="plus">+</span>
                                                                 </div>
                                                             </div>
-                                                            <div class="d-flex single_product col-sm-12">
-                                                                <input type="submit" class="btn px-4 add_cart_btn" id=""
-                                                                    onclick="return sendSuccess();" name="add_cart"
-                                                                    value="Add To Cart" />
+                                                             <div class="d-flex single_product col-sm-12">
+                                                                 @if($details->stock > 0)
+                                                                 <input type="submit" class="btn px-4 add_cart_btn" id=""
+                                                                     onclick="return sendSuccess();" name="add_cart"
+                                                                     value="Add To Cart" />
 
-                                                                <input type="submit"
-                                                                    class="btn px-4 order_now_btn order_now_btn_m"
-                                                                    onclick="return sendSuccess();" name="order_now"
-                                                                    value="Order Now" />
-                                                            </div>
+                                                                 <input type="submit"
+                                                                     class="btn px-4 order_now_btn order_now_btn_m"
+                                                                     onclick="return sendSuccess();" name="order_now"
+                                                                     value="Order Now" />
+                                                                 @else
+                                                                 <div class="btn px-4 btn-secondary w-100 text-center">Out of Stock</div>
+                                                                 @endif
+                                                             </div>
                                                         </div>
                                                         <div class="mt-md-2 mt-2">
                                                             <h4 class="font-weight-bold">
@@ -522,6 +526,7 @@
                                 </div>
                             </div>
 
+                                @if($value->stock > 0)
                                 @if(! $value->prosizes->isEmpty() || ! $value->procolors->isEmpty())
                                     <div class="pro_btn sub_btn">
                                         <div class="cart_btn">
@@ -533,7 +538,7 @@
                                         </div>
                                     </div>  
                                 @else
-                               
+                                
                                 <div class="pro_btn sub_btn">
                                     <div class="cart_btn">
                                         <a class="cart_store" data-id="{{ $value->id }}">Add to
@@ -547,6 +552,11 @@
                                         <button type="submit" class="cart_btn order_btn">Order Now</button>
                                     </form>
                                 </div>
+                            @endif
+                            @else
+                            <div class="pro_btn sub_btn">
+                                <div class="cart_btn btn-secondary p-2 text-center rounded">Out of Stock</div>
+                            </div>
                             @endif
                         </div>
                     @endforeach

@@ -751,9 +751,11 @@
                         url: "{{url('add-to-cart')}}/" + id + "/" + qty,
                         dataType: "json",
                         success: function (data) {
-                            if (data) {
-                                toastr.success('Success', 'Product add to cart successfully');
+                            if (data.success) {
+                                toastr.success(data.message);
                                 return cart_count() + mobile_cart();
+                            } else if (data.error) {
+                                toastr.error(data.error);
                             }
                         },
                     });
@@ -768,9 +770,11 @@
                         data: { id: id, qty: qty ? qty : 1 , _token:'{{csrf_token()}}'},
                         url: "{{route('cart.store')}}",
                         success: function (data) {
-                            if (data) {
+                            if (data.success) {
                                 toastr.success('Success', 'Product add to cart succfully');
                                 return cart_count() + mobile_cart();
+                            } else if (data.error) {
+                                toastr.error(data.error);
                             }
                         },
                     });

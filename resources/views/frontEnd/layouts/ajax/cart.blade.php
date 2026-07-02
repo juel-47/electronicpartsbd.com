@@ -110,8 +110,11 @@
            type:"GET",
            data:{'id':id},
            url:"{{route('cart.increment')}}",
+           dataType: "json",
            success:function(data){               
-            if(data){
+            if(data.error){
+                toastr.error(data.error);
+            } else if(data){
                 $(".cartlist").html(data);
                 return cart_count();
             }

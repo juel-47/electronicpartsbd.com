@@ -340,6 +340,7 @@
                                                     <a
                                                         href="{{ route('product', $value->slug) }}">{{ Str::limit($value->name, 80) }}</a>
                                                 </div>
+                                                @if($value->stock > 0)
                                                 <div class="pro_price">
                                                     <p>
                                                         @if ($value->old_price)
@@ -350,9 +351,15 @@
 
                                                     </p>
                                                 </div>
+                                                @else
+                                                <div class="pro_price">
+                                                    <p class="text-danger fw-bold">Out of Stock</p>
+                                                </div>
+                                                @endif
                                             </div>
                                         </div>
 
+                                        @if($value->stock > 0)
                                         @if (!$value->prosizes->isEmpty() || !$value->procolors->isEmpty())
                                             {{-- <div class="pro_btn">
                                                 <div class="cart_btn order_button">
@@ -386,9 +393,11 @@
                                                     </form>
                                                 </div>
                                             </div>
-
-                                            {{-- <div class="pro_btn">
+                                        @endif
+                                        @endif
+                                             {{-- <div class="pro_btn">
                                                 
+
 
                                                 <form action="{{ route('cart.store') }}" method="POST">
                                                     @csrf
@@ -398,7 +407,6 @@
                                                     <button type="submit">Order Now</button>
                                                 </form>
                                             </div> --}}
-                                        @endif
                                     </div>
                                 @endforeach
                             </div>
@@ -475,6 +483,7 @@
                                                         <a
                                                             href="{{ route('product', $value->slug) }}">{{ Str::limit($value->name, 80) }}</a>
                                                     </div>
+                                                    @if($value->stock > 0)
                                                     <div class="pro_price">
                                                         <p>
                                                             @if ($value->old_price)
@@ -485,28 +494,15 @@
 
                                                         </p>
                                                     </div>
+                                                    @else
+                                                    <div class="pro_price">
+                                                        <p class="text-danger fw-bold">Out of Stock</p>
+                                                    </div>
+                                                    @endif
                                                 </div>
                                             </div>
 
-                                            {{-- @if (!$value->prosizes->isEmpty() || !$value->procolors->isEmpty())
-                                                <div class="pro_btn">
-                                                    <div class="cart_btn order_button">
-                                                        <a href="{{ route('product', $value->slug) }}"
-                                                            class="addcartbutton">Order Now </a>
-                                                    </div>
-                                                </div>
-                                            @else
-                                                <div class="pro_btn">
-
-                                                    <form action="{{ route('cart.store') }}" method="POST">
-                                                        @csrf
-                                                        <input type="hidden" name="id"
-                                                            value="{{ $value->id }}" />
-                                                        <input type="hidden" name="qty" value="1" />
-                                                        <button type="submit">Order Now</button>
-                                                    </form>
-                                                </div>
-                                            @endif --}}
+                                            @if($value->stock > 0)
                                             @if (!$value->prosizes->isEmpty() || !$value->procolors->isEmpty())
                                                 <div class="pro_btn d-flex align-items-center justify-content-between">
                                                     <div class="cart_btn">
@@ -536,6 +532,7 @@
                                                         </form>
                                                     </div>
                                                 </div>
+                                            @endif
                                             @endif
                                         </div>
                                     @endforeach

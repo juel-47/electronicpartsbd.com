@@ -271,6 +271,14 @@ class CustomerController extends Controller
             return redirect()->back();
         }
 
+        foreach(Cart::instance('shopping')->content() as $cartItem){
+            $product = Product::find($cartItem->id);
+            if (!$product || $product->stock <= 0 || $cartItem->qty > $product->stock) {
+                Toastr::error($cartItem->name . ' is out of stock. Please remove it from cart.', 'Error!');
+                return redirect()->back();
+            }
+        }
+
         $subtotal = Cart::instance('shopping')->subtotal();
         $subtotal = str_replace(',','',$subtotal);
         $subtotal = str_replace('.00', '',$subtotal);

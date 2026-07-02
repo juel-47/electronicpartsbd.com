@@ -51,7 +51,7 @@ class Category extends Model
 
     public function products()
     {
-        return $this->hasMany(Product::class, 'category_id')->select('id', 'name', 'slug', 'category_id', 'new_price', 'old_price','img_alt_text')->orderBy('id','DESC');
+        return $this->hasMany(Product::class, 'category_id')->select('id', 'name', 'slug', 'category_id', 'new_price', 'old_price','img_alt_text', 'stock')->orderBy('id','DESC');
     }
     
     

@@ -8,8 +8,12 @@
 						<img src="{{asset($value->image?$value->image->image:'')}}" alt="{{$value->name}}">
 					</div>
 					<div class="search_content">
-						<p class="name">{{$value->name}}</p>                 
+						<p class="name">{{$value->name}}</p>
+						@if($value->stock > 0)
 						<p  class="price">৳{{$value->new_price}} @if($value->old_price)<del>৳{{$value->old_price}}</del>@endif</p>
+						@else
+						<p class="price text-danger">Out of Stock</p>
+						@endif
 					</div>
 			</li>
 		</a>

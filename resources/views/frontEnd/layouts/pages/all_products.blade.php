@@ -70,6 +70,7 @@
                                         <a
                                             href="{{ route('product', $value->slug) }}">{{ Str::limit($value->name, 80) }}</a>
                                     </div>
+                                    @if($value->stock > 0)
                                     <div class="pro_price">
                                         <p>
                                             @if ($value->old_price)
@@ -78,8 +79,14 @@
                                             ৳ {{ $value->new_price }}
                                         </p>
                                     </div>
+                                    @else
+                                    <div class="pro_price">
+                                        <p class="text-danger fw-bold">Out of Stock</p>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
+                            @if($value->stock > 0)
                             @if (!$value->prosizes->isEmpty() || !$value->procolors->isEmpty())
                                 <div class="pro_btn d-flex align-items-center justify-content-between">
                                     <div class="cart_btn">
@@ -104,6 +111,7 @@
                                         </form>
                                     </div>
                                 </div>
+                            @endif
                             @endif
                         </div>
                     </div>

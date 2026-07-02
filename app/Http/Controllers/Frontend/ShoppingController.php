@@ -19,6 +19,10 @@ class ShoppingController extends Controller
         if (!$productInfo) {
             return response()->json(['error' => 'Product not found'], 404);
         }
+
+        if ($productInfo->stock <= 0 || $qty > $productInfo->stock) {
+            return response()->json(['error' => 'This product is out of stock']);
+        }
     
         $cartinfo = Cart::instance('shopping')->add([
             'id' => $productInfo->id,
@@ -58,6 +62,12 @@ class ShoppingController extends Controller
     public function cart_store(Request $request)
     {
         $product = Product::where('is_deleted',0)->where(['id' => $request->id])->first();
+
+        if (!$product || $product->stock <= 0 || $request->qty > $product->stock) {
+            Toastr::error('This product is out of stock', 'Error!');
+            return redirect()->back();
+        }
+
         Cart::instance('shopping')->add([
             'id' => $product->id,
             'name' => $product->name,
@@ -87,7 +97,11 @@ class ShoppingController extends Controller
     public function cart_increment(Request $request)
     {
         $item = Cart::instance('shopping')->get($request->id);
+        $product = DB::table('products')->where('id', $item->id)->first();
         $qty = $item->qty + 1;
+        if ($product && $qty > $product->stock) {
+            return response()->json(['error' => 'Insufficient stock']);
+        }
         $increment = Cart::instance('shopping')->update($request->id, $qty);
         $data = Cart::instance('shopping')->content();
         return view('frontEnd.layouts.ajax.cart', compact('data'));

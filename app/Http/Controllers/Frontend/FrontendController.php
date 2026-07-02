@@ -53,14 +53,14 @@ class FrontendController extends Controller
 
         $hotdeal_top = Product::where('is_deleted',0)->where(['status' => 1, 'topsale' => 1])
             ->orderBy('id', 'DESC')
-            ->select('id', 'name', 'slug', 'new_price', 'old_price','img_alt_text')
+            ->select('id', 'name', 'slug', 'new_price', 'old_price','img_alt_text', 'stock')
             ->with('prosizes', 'procolors')
             ->limit(5)
             ->get();
         // return $hotdeal_top;
 
         $hotdeal_bottom = Product::where('is_deleted',0)->where(['status' => 1, 'topsale' => 1])
-            ->select('id', 'name', 'slug', 'new_price', 'old_price','img_alt_text')
+            ->select('id', 'name', 'slug', 'new_price', 'old_price','img_alt_text', 'stock')
             ->skip(12)
             ->limit(5)
             ->get();
@@ -90,7 +90,7 @@ class FrontendController extends Controller
     {
 
         $products = Product::where('is_deleted',0)->where(['status' => 1, 'topsale' => 1])
-            ->select('id', 'name', 'slug', 'new_price', 'old_price')
+            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'stock')
             ->paginate(36);
         return view('frontEnd.layouts.pages.hotdeals', compact('products'));
     }
@@ -99,7 +99,7 @@ class FrontendController extends Controller
     {
         $category = Category::where(['slug' => $slug, 'status' => 1])->first();
         $products = Product::where('is_deleted',0)->where(['status' => 1, 'category_id' => $category->id])
-            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'category_id');
+            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'category_id', 'stock');
         $subcategories = Subcategory::where('category_id', $category->id)->get();
 
         // return $request->sort;
@@ -142,7 +142,7 @@ class FrontendController extends Controller
     {
         $subcategory = Subcategory::where(['slug' => $slug, 'status' => 1])->first();
         $products = Product::where('is_deleted',0)->where(['status' => 1, 'subcategory_id' => $subcategory->id])
-            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'category_id', 'subcategory_id');
+            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'category_id', 'subcategory_id', 'stock');
         $childcategories = Childcategory::where('subcategory_id', $subcategory->id)->get();
 
         // return $request->sort;
@@ -191,7 +191,7 @@ class FrontendController extends Controller
     {
         $brand = Brand::where(['slug' => $slug, 'status' => 1])->first();
         $products = Product::where(['status' => 1, 'brand_id' => $brand->id])
-            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'category_id');    
+            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'category_id', 'stock');    
 
         // return $request->sort;
         if ($request->sort == 1) {
@@ -233,7 +233,7 @@ class FrontendController extends Controller
         $childcategory = Childcategory::where(['slug' => $slug, 'status' => 1])->first();
         $childcategories = Childcategory::where('subcategory_id', $childcategory->subcategory_id)->get();
         $products = Product::where('is_deleted',0)->where(['status' => 1, 'childcategory_id' => $childcategory->id])->with('category')
-            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'category_id', 'subcategory_id', 'childcategory_id');
+            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'category_id', 'subcategory_id', 'childcategory_id', 'stock');
 
 
         // return $request->sort;
@@ -282,7 +282,7 @@ class FrontendController extends Controller
         $products = Product::where(['category_id' => $details->category_id, 'status' => 1])
             ->where('is_deleted',0)
             ->with('image')
-            ->select('id', 'name', 'slug', 'new_price', 'old_price')
+            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'stock')
             ->get();
         $shippingcharge = ShippingCharge::where('status', 1)->get();
         $reviews = Review::where('product_id', $details->id)->get();
@@ -308,17 +308,15 @@ class FrontendController extends Controller
     public function livesearch(Request $request)
     {
         $products = Product::where('is_deleted', 0)
-            ->select('id', 'name', 'slug', 'new_price', 'old_price')
+            ->select('id', 'name', 'slug', 'new_price', 'old_price', 'stock')
             ->where('status', 1)
             ->with('image');
 
         if ($request->keyword) {
-            $words = preg_split('/\s+/', trim($request->keyword));
-            $products = $products->where(function($q) use ($words) {
-                foreach ($words as $word) {
-                    $q->orWhere('name', 'LIKE', '%'.$word.'%')
-                      ->orWhere('sku', 'LIKE', '%'.$word.'%');
-                }
+            $keyword = trim($request->keyword);
+            $products = $products->where(function($q) use ($keyword) {
+                $q->where('name', 'LIKE', '%'.$keyword.'%')
+                  ->orWhere('sku', 'LIKE', '%'.$keyword.'%');
             });
         }
 
@@ -337,16 +335,14 @@ class FrontendController extends Controller
     }
     public function search(Request $request)
     {
-        $products = Product::where('is_deleted',0)->select('id', 'name', 'slug', 'new_price', 'old_price', 'img_alt_text')
+        $products = Product::where('is_deleted',0)->select('id', 'name', 'slug', 'new_price', 'old_price', 'img_alt_text', 'stock')
             ->where('status', 1)
             ->with('image');
         if ($request->keyword) {
-            $words = preg_split('/\s+/', trim($request->keyword));
-            $products = $products->where(function($q) use ($words) {
-                foreach ($words as $word) {
-                    $q->orWhere('name', 'LIKE', '%'.$word.'%')
-                      ->orWhere('sku', 'LIKE', '%'.$word.'%');
-                }
+            $keyword = trim($request->keyword);
+            $products = $products->where(function($q) use ($keyword) {
+                $q->where('name', 'LIKE', '%'.$keyword.'%')
+                  ->orWhere('sku', 'LIKE', '%'.$keyword.'%');
             });
         }
         if ($request->category) {

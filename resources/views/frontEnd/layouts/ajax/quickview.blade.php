@@ -7,10 +7,15 @@
 		<div class="product-details-cart">
             <p class="name">{{$data->name}}</p>
              <p style="display: none;" class="product_star"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i> ({{$data->reviews_count}} customer review)</p>
+            @if($data->stock > 0)
             <p class="details-price">৳{{$data->new_price}} @if($data->old_price)<del>৳{{$data->old_price}}</del>@endif</p>
+            @else
+            <p class="details-price text-danger fw-bold">Out of Stock</p>
+            @endif
             <div class="details_short">
                 {!! $data->short_description !!}
             </div>
+            @if($data->stock > 0)
             <form action="{{route('cart.store')}}" method="POST">
                 @csrf
                 <input type="hidden" name="id" value="{{$data->id}}">                
@@ -24,6 +29,7 @@
                     <button type="submit" class="add-to-cart cart_store" data-id="{{$data->id}}">add to cart</button>
                 </div>
             </form>
+            @endif
             <a href="{{route('product',['id'=>$data->id])}}" style="display: none;" class="details-wishlist">Go To Details</a>
             <div class="col-12 mt-3 delivery_details">
                 <table class="table">
