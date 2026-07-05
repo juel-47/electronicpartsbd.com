@@ -307,6 +307,12 @@
                     <li>
                       <a href="{{route('products.trash')}}"><i data-feather="file-plus"></i>Trash</a>
                     </li>
+                    <li>
+                      <a href="{{route('products.import.view')}}"><i data-feather="file-plus"></i>Import</a>
+                    </li>
+                    <li>
+                      <a href="{{route('products.export.view')}}"><i data-feather="file-plus"></i>Export</a>
+                    </li>
                     
                   </ul>
                 </div>

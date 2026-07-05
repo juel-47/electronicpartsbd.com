@@ -20,6 +20,13 @@ use File;
 use Str;
 use Image;
 use DB;
+use App\Exports\ProductExport;
+use App\Exports\ProductTemplateExport;
+use App\Imports\ProductImport;
+use App\Imports\ProductImportPreview;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ProductController extends Controller
 {
@@ -373,6 +380,231 @@ class ProductController extends Controller
     public function stockOutProducts(){
         $data = Product::orderBy('id','DESC')->with('image','category')->where('status',1)->where('stock','<=',0)->paginate(50);
         return view('backEnd.product.stock_out',compact('data'));
+    }
+
+    public function importView()
+    {
+        return view('backEnd.product.import');
+    }
+
+    public function downloadTemplate($type = 'xlsx')
+    {
+        if ($type === 'csv') {
+            return Excel::download(new ProductTemplateExport, 'product_import_template.csv');
+        }
+        return Excel::download(new ProductTemplateExport, 'product_import_template.xlsx');
+    }
+
+    public function exportView()
+    {
+        $categories = Category::where('status', 1)->select('id', 'name')->get();
+        return view('backEnd.product.export', compact('categories'));
+    }
+
+    public function exportDownload(Request $request)
+    {
+        $query = Product::with('category', 'subcategory', 'childcategory', 'brand', 'images')
+            ->where('is_deleted', 0);
+
+        if ($request->category_id) {
+            $query->where('category_id', $request->category_id);
+        }
+        if ($request->status !== null && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
+        if ($request->stock_filter === 'out') {
+            $query->where('stock', '<=', 0);
+        } elseif ($request->stock_filter === 'low') {
+            $query->where('stock', '>', 0)->where('stock', '<=', 5);
+        }
+
+        $format = $request->format ?? 'xlsx';
+
+        if ($format === 'pdf') {
+            $products = $query->get();
+            $pdf = Pdf::loadView('backEnd.product.export_pdf', compact('products'));
+            return $pdf->download('products_export.pdf');
+        }
+
+        $products = $query->get();
+        $export = new ProductExport($products);
+
+        if ($format === 'csv') {
+            return Excel::download($export, 'products_export.csv');
+        }
+        return Excel::download($export, 'products_export.xlsx');
+    }
+
+    public function importPreview(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,csv,xls|max:102400',
+        ]);
+
+        $file = $request->file('file');
+        $extractedImageData = ['images' => [], 'rowMap' => []];
+
+        try {
+            $fileType = IOFactory::identify($file->getRealPath());
+            if ($fileType !== 'Csv') {
+                $extractedImageData = $this->extractImagesFromXlsx($file);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Import format check error: ' . $e->getMessage());
+        }
+
+        $tempDir = public_path('uploads/import_temp/');
+        if (!File::exists($tempDir)) {
+            File::makeDirectory($tempDir, 0755, true);
+        }
+        $tempFile = $tempDir . time() . '_' . $file->getClientOriginalName();
+        copy($file->getRealPath(), $tempFile);
+
+        $extractedImages = $extractedImageData['images'];
+        $uploadedImages = $request->session()->get('import_uploaded_images', []);
+
+        $preview = new ProductImportPreview($extractedImages, $extractedImageData['rowMap'], $uploadedImages);
+        Excel::import($preview, $tempFile);
+
+        $previewData = $preview->getPreviewData();
+        $summary = $preview->getSummary();
+
+        $request->session()->put('import_preview_data', $previewData);
+        $request->session()->put('import_summary', $summary);
+        $request->session()->put('import_file_path', $tempFile);
+        $request->session()->put('import_original_name', $file->getClientOriginalName());
+        $request->session()->put('import_extracted_images', $extractedImages);
+        $request->session()->put('import_row_map', $extractedImageData['rowMap']);
+
+        return view('backEnd.product.import_preview', compact('previewData', 'summary'));
+    }
+
+    protected function extractImagesFromXlsx($file)
+    {
+        $result = ['images' => [], 'rowMap' => []];
+        try {
+            $fileType = IOFactory::identify($file->getRealPath());
+            $reader = IOFactory::createReader($fileType);
+            $reader->setReadDataOnly(false);
+            $spreadsheet = $reader->load($file->getRealPath());
+            $worksheet = $spreadsheet->getActiveSheet();
+
+            $tempDir = public_path('uploads/import_temp/');
+            if (!File::exists($tempDir)) {
+                File::makeDirectory($tempDir, 0755, true);
+            }
+
+            foreach ($worksheet->getDrawingCollection() as $drawing) {
+                $coordinate = $drawing->getCoordinates();
+                [$column, $rowNumber] = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::coordinateFromString($coordinate);
+
+                if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
+                    $imageData = $drawing->getImageResource();
+                    $imageName = 'row' . $rowNumber . '_' . uniqid() . '.png';
+                    $tempPath = $tempDir . $imageName;
+                    imagepng($imageData, $tempPath);
+                } elseif ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\Drawing) {
+                    $ext = strtolower(pathinfo($drawing->getPath(), PATHINFO_EXTENSION) ?: 'png');
+                    $imageName = 'row' . $rowNumber . '_' . uniqid() . '.' . $ext;
+                    $tempPath = $tempDir . $imageName;
+                    copy($drawing->getPath(), $tempPath);
+                } else {
+                    continue;
+                }
+
+                $imgKey = 'img_' . $rowNumber;
+                if (!isset($result['images'][$imgKey])) {
+                    $result['images'][$imgKey] = [];
+                }
+                $result['images'][$imgKey][] = [
+                    'path' => $tempPath,
+                    'name' => $imageName,
+                    'row' => $rowNumber,
+                ];
+                $result['rowMap'][$rowNumber] = $imgKey;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Image extraction error: ' . $e->getMessage());
+        }
+        return $result;
+    }
+
+    public function importProcess(Request $request)
+    {
+        $previewData = $request->session()->get('import_preview_data');
+        $extractedImages = $request->session()->get('import_extracted_images', []);
+        $uploadedImages = $request->session()->get('import_uploaded_images', []);
+        $rowMap = $request->session()->get('import_row_map', []);
+        $allImages = ['images' => $extractedImages, 'uploaded' => $uploadedImages, 'rowMap' => $rowMap];
+        $filePath = $request->session()->get('import_file_path');
+
+        if (!$previewData || !$filePath) {
+            Toastr::error('Session expired. Please upload again.');
+            return redirect()->route('products.import.view');
+        }
+
+        if (!File::exists($filePath)) {
+            Toastr::error('Import file not found. Please upload again.');
+            return redirect()->route('products.import.view');
+        }
+
+        $import = new ProductImport($allImages);
+        Excel::import($import, $filePath);
+
+        $successCount = $import->getSuccessCount();
+        $errorCount = $import->getErrorCount();
+        $errors = $import->getErrors();
+
+        File::delete($filePath);
+
+        $tempImageDir = public_path('uploads/import_temp/');
+        if (File::exists($tempImageDir)) {
+            File::deleteDirectory($tempImageDir);
+        }
+
+        $request->session()->forget(['import_preview_data', 'import_summary', 'import_file_path', 'import_original_name', 'import_extracted_images', 'import_uploaded_images', 'import_row_map']);
+
+        if ($successCount > 0) {
+            Toastr::success("{$successCount} products imported successfully!");
+        }
+        if ($errorCount > 0) {
+            $request->session()->flash('import_errors', $errors);
+            Toastr::error("{$errorCount} rows had errors. Check error log.");
+        }
+
+        return redirect()->route('products.import.result');
+    }
+
+    public function importResult(Request $request)
+    {
+        $importErrors = $request->session()->get('import_errors', []);
+        return view('backEnd.product.import_result', compact('importErrors'));
+    }
+
+    public function uploadImages(Request $request)
+    {
+        $request->validate([
+            'images' => 'required',
+            'images.*' => 'image|mimes:jpg,jpeg,png,gif,webp|max:5120',
+        ]);
+
+        $uploaded = [];
+        $uploadPath = public_path('uploads/import_temp/images/');
+        if (!File::exists($uploadPath)) {
+            File::makeDirectory($uploadPath, 0755, true);
+        }
+
+        foreach ($request->file('images') as $image) {
+            $origName = $image->getClientOriginalName();
+            $name = time() . '_' . Str::slug(pathinfo($origName, PATHINFO_FILENAME)) . '.' . $image->getClientOriginalExtension();
+            $image->move($uploadPath, $name);
+            $uploaded[$origName] = $uploadPath . $name;
+        }
+
+        $existing = $request->session()->get('import_uploaded_images', []);
+        $request->session()->put('import_uploaded_images', array_merge($existing, $uploaded));
+
+        return response()->json(['success' => true, 'images' => $uploaded]);
     }
     
 }

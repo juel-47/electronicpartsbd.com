@@ -15,6 +15,8 @@
     </div>       
     <!-- end page title --> 
                     <a href="{{route('products.create')}}" class="btn btn-danger rounded-pill"><i class="fe-shopping-cart"></i> Add Product</a>
+                    <a href="{{route('products.import.view')}}" class="btn btn-info rounded-pill"><i class="fe-upload"></i> Import</a>
+                    <a href="{{route('products.export.view')}}" class="btn btn-success rounded-pill"><i class="fe-download"></i> Export</a>
    <div class="row">
     <div class="col-12">
         <div class="card">

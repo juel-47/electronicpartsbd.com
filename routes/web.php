@@ -345,7 +345,16 @@ Route::group(['namespace'=>'Admin','middleware' => ['auth','lock','check_refer']
     Route::get('products/retrieve', [ProductController::class,'retrieve'])->name('products.retrieve');
     Route::get('products/delete', [ProductController::class,'delete'])->name('products.delete');
 
-    
+    // import & export
+    Route::get('products/import', [ProductController::class,'importView'])->name('products.import.view');
+    Route::get('products/import/template/{type}', [ProductController::class,'downloadTemplate'])->name('products.import.template');
+    Route::post('products/import/preview', [ProductController::class,'importPreview'])->name('products.import.preview');
+    Route::post('products/import/process', [ProductController::class,'importProcess'])->name('products.import.process');
+    Route::get('products/import/result', [ProductController::class,'importResult'])->name('products.import.result');
+    Route::post('products/import/upload-images', [ProductController::class,'uploadImages'])->name('products.import.upload-images');
+    Route::get('products/export', [ProductController::class,'exportView'])->name('products.export.view');
+    Route::get('products/export/download', [ProductController::class,'exportDownload'])->name('products.export.download');
+
     // campaign
     Route::get('campaign/manage', [CampaignController::class,'index'])->name('campaign.index');
     Route::get('campaign/{id}/show', [CampaignController::class,'show'])->name('campaign.show');
