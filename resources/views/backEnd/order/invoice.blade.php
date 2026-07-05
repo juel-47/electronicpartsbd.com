@@ -42,7 +42,7 @@
     <div class="container">
         <div class="row">
             <div class="col-sm-6">
-                <a href="" class="no-print"><strong><i class="fe-arrow-left"></i> Back To Order</strong></a>
+                <a href="{{route('admin.orders', ['slug' => 'all'])}}" class="no-print"><strong><i class="fe-arrow-left"></i> Back To Order</strong></a>
             </div>
             <div class="col-sm-6">
                 <button onclick="printFunction()"class="no-print btn btn-xs btn-success waves-effect waves-light"><i class="fa fa-print"></i></button>
