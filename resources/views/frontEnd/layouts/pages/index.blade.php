@@ -369,7 +369,7 @@
                                             </div> --}}
                                             <div class="pro_btn d-flex align-items-center justify-content-between">
                                                 <div class="cart_btn">
-                                                    <a class="cart_store" data-id="{{ $value->id }}">Add to
+                                                    <a class="addcartbutton" data-id="{{ $value->id }}">Add to
                                                         Cart</a>
                                                 </div>
                                                 <div class="cart_btn">
@@ -380,7 +380,7 @@
                                         @else
                                             <div class="pro_btn d-flex align-items-center justify-content-between">
                                                 <div class="cart_btn">
-                                                    <a class="cart_store" data-id="{{ $value->id }}">Add to
+                                                    <a class="addcartbutton" data-id="{{ $value->id }}">Add to
                                                         Cart</a>
                                                 </div>
                                                 <div class="cart_btn">
@@ -506,7 +506,7 @@
                                             @if (!$value->prosizes->isEmpty() || !$value->procolors->isEmpty())
                                                 <div class="pro_btn d-flex align-items-center justify-content-between">
                                                     <div class="cart_btn">
-                                                        <a class="cart_store" data-id="{{ $value->id }}">Add to
+                                                        <a class="addcartbutton" data-id="{{ $value->id }}">Add to
                                                             Cart</a>
                                                     </div>
                                                     <div class="cart_btn">
@@ -518,7 +518,7 @@
                                             @else
                                                 <div class="pro_btn d-flex align-items-center justify-content-between">
                                                     <div class="cart_btn">
-                                                        <a class="cart_store" data-id="{{ $value->id }}">Add to
+                                                        <a class="addcartbutton" data-id="{{ $value->id }}">Add to
                                                             Cart</a>
                                                     </div>
                                                     <div class="cart_btn">

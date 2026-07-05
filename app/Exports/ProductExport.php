@@ -35,7 +35,7 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, WithEv
             'ID', 'Name', 'SKU', 'Product Code', 'Category', 'Subcategory', 'Childcategory',
             'Brand', 'Purchase Price', 'Old Price', 'New Price', 'Stock', 'Unit',
             'Description', 'Specification', 'Tags', 'Status', 'Feature Product', 'Hot Deal',
-            'Campaign ID', 'Images', 'Slug', 'Created At'
+            'Images', 'Slug', 'Created At'
         ];
     }
 
@@ -44,6 +44,19 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, WithEv
         $images = $product->images->pluck('image')->map(function($img) {
             return url($img);
         })->implode(',');
+
+        // Strip HTML tags, replace &nbsp; with space, and decode other HTML entities
+        $desc = $product->description;
+        $desc = str_replace('&nbsp;', ' ', $desc ?? '');
+        $desc = html_entity_decode(strip_tags($desc), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $desc = preg_replace('/\s+/', ' ', $desc);
+        $desc = trim($desc);
+
+        $spec = $product->specification;
+        $spec = str_replace('&nbsp;', ' ', $spec ?? '');
+        $spec = html_entity_decode(strip_tags($spec), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $spec = preg_replace('/\s+/', ' ', $spec);
+        $spec = trim($spec);
 
         return [
             $product->id,
@@ -59,13 +72,12 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, WithEv
             $product->new_price,
             $product->stock,
             $product->pro_unit,
-            $product->description,
-            $product->specification,
+            $desc,
+            $spec,
             is_array($product->tags) ? implode(',', $product->tags) : $product->tags,
             $product->status ? 'Active' : 'Inactive',
             $product->feature_product ? 'Yes' : 'No',
             $product->topsale ? 'Yes' : 'No',
-            $product->campaign_id,
             $images,
             $product->slug,
             $product->created_at?->format('Y-m-d H:i:s'),
@@ -77,8 +89,8 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, WithEv
         return [
             AfterSheet::class => function(AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $sheet->getStyle('A1:W1')->getFont()->setBold(true);
-                foreach (range('A', 'W') as $col) {
+                $sheet->getStyle('A1:V1')->getFont()->setBold(true);
+                foreach (range('A', 'V') as $col) {
                     $sheet->getColumnDimension($col)->setAutoSize(true);
                 }
             },

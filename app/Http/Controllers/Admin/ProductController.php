@@ -421,9 +421,18 @@ class ProductController extends Controller
         $format = $request->format ?? 'xlsx';
 
         if ($format === 'pdf') {
-            $products = $query->get();
+            ini_set('memory_limit', '1024M');
+            set_time_limit(300);
+            // Only load what's needed for the PDF (no images — keeps PDF small and fast)
+            $products = $query->with(['category', 'brand'])->get();
             $pdf = Pdf::loadView('backEnd.product.export_pdf', compact('products'));
-            return $pdf->download('products_export.pdf');
+            $pdf->setPaper('a4', 'landscape');
+            $pdfContent = $pdf->output();
+            return response($pdfContent, 200, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="products_export.pdf"',
+                'Content-Length'      => strlen($pdfContent),
+            ]);
         }
 
         $products = $query->get();

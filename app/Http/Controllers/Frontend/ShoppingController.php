@@ -85,6 +85,13 @@ class ShoppingController extends Controller
         ]);
 
         Toastr::success('Product successfully add to cart', 'Success!');
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Product successfully add to cart!',
+                'cart_count' => Cart::instance('shopping')->count(),
+            ]);
+        }
         return redirect()->route('customer.checkout');
         
     }
