@@ -52,7 +52,7 @@
             <li class="dropdown notification-list topbar-dropdown">
               <a class="nav-link dropdown-toggle waves-effect waves-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                 <i class="fe-bell noti-icon"></i>
-                <span class="badge bg-danger rounded-circle noti-icon-badge">{{$neworder}}</span>
+                <span class="badge bg-danger rounded-circle noti-icon-badge">{{$neworder + $pendingExportCount}}</span>
               </a>
               <div class="dropdown-menu dropdown-menu-end dropdown-lg">
                 <!-- item-->
@@ -89,6 +89,51 @@
                   View all
                   <i class="fe-arrow-right"></i>
                 </a>
+
+                <div class="dropdown-divider"></div>
+
+                <div class="dropdown-item noti-title">
+                  <h5 class="m-0">
+                    <span class="float-end">
+                      <a href="{{route('products.export.view')}}" class="text-dark">
+                        <small>All Exports</small>
+                      </a>
+                    </span>
+                    Exports
+                  </h5>
+                </div>
+
+                @foreach($recentExports as $exp)
+                <a href="{{ $exp->status === 'completed' ? route('products.export.download_file', $exp->id) : '#' }}"
+                   class="dropdown-item notify-item @if($exp->status === 'completed') active @endif">
+                  <div class="notify-icon">
+                    @if($exp->status === 'completed')
+                      <i class="fe-check-circle text-success"></i>
+                    @elseif($exp->status === 'failed')
+                      <i class="fe-x-circle text-danger"></i>
+                    @elseif($exp->status === 'processing')
+                      <i class="fe-loader text-info"></i>
+                    @else
+                      <i class="fe-clock text-warning"></i>
+                    @endif
+                  </div>
+                  <p class="notify-details">{{ $exp->filename }}</p>
+                  <p class="text-muted mb-0 user-msg">
+                    <small>
+                      @if($exp->status === 'completed')
+                        Ready · {{ round($exp->file_size/1024, 1) }} KB
+                      @elseif($exp->status === 'processing')
+                        Processing...
+                      @elseif($exp->status === 'failed')
+                        Failed
+                      @else
+                        Pending...
+                      @endif
+                    </small>
+                  </p>
+                </a>
+                @endforeach
+
               </div>
             </li>
 

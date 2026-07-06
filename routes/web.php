@@ -354,6 +354,9 @@ Route::group(['namespace'=>'Admin','middleware' => ['auth','lock','check_refer']
     Route::post('products/import/upload-images', [ProductController::class,'uploadImages'])->name('products.import.upload-images');
     Route::get('products/export', [ProductController::class,'exportView'])->name('products.export.view');
     Route::get('products/export/download', [ProductController::class,'exportDownload'])->name('products.export.download');
+    Route::post('products/export/queue', [ProductController::class,'exportQueue'])->name('products.export.queue');
+    Route::get('products/export/status/{id}', [ProductController::class,'exportStatus'])->name('products.export.status');
+    Route::get('products/export/download/{id}', [ProductController::class,'exportFileDownload'])->name('products.export.download_file');
 
     // campaign
     Route::get('campaign/manage', [CampaignController::class,'index'])->name('campaign.index');

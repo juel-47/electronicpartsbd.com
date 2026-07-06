@@ -3,30 +3,29 @@
 namespace App\Exports;
 
 use App\Models\Product;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 
-class ProductExport implements FromCollection, WithHeadings, WithMapping, WithEvents
+class ProductExport implements FromQuery, WithHeadings, WithMapping, WithEvents
 {
-    protected $products;
+    protected $query;
 
-    public function __construct($products = null)
+    public function __construct($query = null)
     {
-        $this->products = $products;
+        $this->query = $query;
     }
 
-    public function collection()
+    public function query()
     {
-        if ($this->products) {
-            return $this->products;
+        if ($this->query) {
+            return $this->query;
         }
         return Product::with('category', 'subcategory', 'childcategory', 'brand', 'images')
             ->where('is_deleted', 0)
-            ->orderBy('id', 'DESC')
-            ->get();
+            ->orderBy('id', 'DESC');
     }
 
     public function headings(): array
@@ -45,7 +44,6 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping, WithEv
             return url($img);
         })->implode(',');
 
-        // Strip HTML tags, replace &nbsp; with space, and decode other HTML entities
         $desc = $product->description;
         $desc = str_replace('&nbsp;', ' ', $desc ?? '');
         $desc = html_entity_decode(strip_tags($desc), ENT_QUOTES | ENT_HTML5, 'UTF-8');

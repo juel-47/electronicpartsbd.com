@@ -24,9 +24,12 @@ use App\Exports\ProductExport;
 use App\Exports\ProductTemplateExport;
 use App\Imports\ProductImport;
 use App\Imports\ProductImportPreview;
+use App\Jobs\ExportProductsJob;
+use App\Models\ExportJob;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -398,7 +401,8 @@ class ProductController extends Controller
     public function exportView()
     {
         $categories = Category::where('status', 1)->select('id', 'name')->get();
-        return view('backEnd.product.export', compact('categories'));
+        $exportJobs = ExportJob::where('user_id', auth()->id())->latest()->limit(20)->get();
+        return view('backEnd.product.export', compact('categories', 'exportJobs'));
     }
 
     public function exportDownload(Request $request)
@@ -435,13 +439,47 @@ class ProductController extends Controller
             ]);
         }
 
-        $products = $query->get();
-        $export = new ProductExport($products);
+        $export = new ProductExport($query);
 
         if ($format === 'csv') {
             return Excel::download($export, 'products_export.csv');
         }
         return Excel::download($export, 'products_export.xlsx');
+    }
+
+    public function exportQueue(Request $request)
+    {
+        $exportJob = ExportJob::create([
+            'user_id' => auth()->id(),
+            'filename' => 'products_' . now()->timestamp . '.' . $request->format,
+            'format' => $request->format,
+            'filters' => $request->only(['category_id', 'status', 'stock_filter']),
+            'status' => 'pending',
+        ]);
+
+        ExportProductsJob::dispatch($exportJob);
+
+        Toastr::success('Export started! Check bell icon for status.');
+        return redirect()->back();
+    }
+
+    public function exportStatus($id)
+    {
+        $job = ExportJob::findOrFail($id);
+        return response()->json([
+            'status' => $job->status,
+            'file_size' => $job->file_size,
+            'error' => $job->error_message,
+        ]);
+    }
+
+    public function exportFileDownload($id)
+    {
+        $job = ExportJob::findOrFail($id);
+        if ($job->status !== 'completed') {
+            abort(404);
+        }
+        return Storage::download($job->file_path, $job->filename);
     }
 
     public function importPreview(Request $request)
