@@ -857,6 +857,56 @@
             });
         });
     </script>
+    <script>
+    var lastCompletedCount = 0;
+    function pollExportBell() {
+        $.get("{{ route('products.export.recent') }}", function(res) {
+            var orderBadge = parseInt('{{ $neworder }}');
+            var totalBadge = orderBadge + res.pending_count;
+            $('.noti-icon-badge').text(totalBadge > 99 ? '99+' : totalBadge);
+
+            var newCompleted = res.jobs.filter(function(j) { return j.status === 'completed'; }).length;
+            if (newCompleted > lastCompletedCount && lastCompletedCount > 0) {
+                toastr.success('New export file ready for download!');
+            }
+            lastCompletedCount = newCompleted;
+
+            var html = '';
+            var exportsFound = false;
+            res.jobs.slice(0, 5).forEach(function(job) {
+                var icon = job.status === 'completed' ? 'fe-check-circle text-success' :
+                           job.status === 'failed' ? 'fe-x-circle text-danger' :
+                           job.status === 'processing' ? 'fe-loader text-info' : 'fe-clock text-warning';
+                var statusText = job.status === 'completed' ? 'Ready &middot; ' + (job.file_size || '') :
+                                 job.status === 'processing' ? 'Processing...' :
+                                 job.status === 'failed' ? 'Failed' : 'Pending...';
+                var href = job.status === 'completed' ? job.download_url : '#';
+                var activeClass = job.status === 'completed' ? ' active' : '';
+                html += '<a href="' + href + '" class="dropdown-item notify-item' + activeClass + '">' +
+                    '<div class="notify-icon"><i class="' + icon + '"></i></div>' +
+                    '<p class="notify-details">' + job.filename + '</p>' +
+                    '<p class="text-muted mb-0 user-msg"><small>' + statusText + '</small></p></a>';
+                exportsFound = true;
+            });
+            if (!exportsFound) {
+                html = '<a href="#" class="dropdown-item notify-item"><p class="text-muted mb-0 text-center">No exports yet</p></a>';
+            }
+
+            var exportsTitle = $('.noti-title:contains("Exports")');
+            if (exportsTitle.length) {
+                exportsTitle.nextAll().remove();
+                exportsTitle.after(html);
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        setTimeout(function() {
+            pollExportBell();
+            setInterval(pollExportBell, 5000);
+        }, 2000);
+    });
+    </script>
     @yield('script')
   </body>
 </html>

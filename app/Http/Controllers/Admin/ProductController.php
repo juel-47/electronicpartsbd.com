@@ -482,6 +482,32 @@ class ProductController extends Controller
         return Storage::download($job->file_path, $job->filename);
     }
 
+    public function exportRecentJobs()
+    {
+        $jobs = ExportJob::where('user_id', auth()->id())
+            ->latest()
+            ->limit(20)
+            ->get()
+            ->map(function ($job) {
+                return [
+                    'id' => $job->id,
+                    'filename' => $job->filename,
+                    'format' => strtoupper($job->format),
+                    'status' => $job->status,
+                    'file_size' => $job->file_size ? round($job->file_size / 1024, 2) . ' KB' : null,
+                    'file_size_raw' => $job->file_size,
+                    'error_message' => $job->error_message,
+                    'created_at' => $job->created_at->format('d M Y, h:i A'),
+                    'download_url' => $job->status === 'completed' ? route('products.export.download_file', $job->id) : null,
+                ];
+            });
+
+        return response()->json([
+            'jobs' => $jobs,
+            'pending_count' => collect($jobs)->whereIn('status', ['pending', 'processing'])->count(),
+        ]);
+    }
+
     public function importPreview(Request $request)
     {
         $request->validate([

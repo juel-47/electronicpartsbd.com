@@ -1,6 +1,7 @@
 @extends('backEnd.layouts.master')
 @section('title','Product Export')
 @section('content')
+<script>var exportPage = true;</script>
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -141,4 +142,48 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('script')
+<script>
+function pollExportTable() {
+    $.get("{{ route('products.export.recent') }}", function(res) {
+        var tbody = $('.table tbody');
+        tbody.empty();
+
+        if (res.jobs.length === 0) {
+            tbody.html('<tr><td colspan="6" class="text-center">No exports yet</td></tr>');
+            return;
+        }
+
+        res.jobs.forEach(function(job) {
+            var badge = job.status === 'completed' ? 'bg-success' :
+                        job.status === 'processing' ? 'bg-info' :
+                        job.status === 'failed' ? 'bg-danger' : 'bg-warning';
+            var statusLabel = job.status.charAt(0).toUpperCase() + job.status.slice(1);
+            var actionHtml = job.status === 'completed'
+                ? '<a href="' + job.download_url + '" class="btn btn-sm btn-success"><i class="fe-download"></i> Download</a>'
+                : job.status === 'failed'
+                ? '<span class="text-danger" title="' + (job.error_message || '') + '">Error</span>'
+                : '<span class="text-muted small"><i class="fe-loader"></i> Processing...</span>';
+
+            tbody.append('<tr>' +
+                '<td>' + job.filename + '</td>' +
+                '<td>' + job.format + '</td>' +
+                '<td><span class="badge ' + badge + '">' + statusLabel + '</span></td>' +
+                '<td>' + (job.file_size || '-') + '</td>' +
+                '<td>' + job.created_at + '</td>' +
+                '<td>' + actionHtml + '</td>' +
+                '</tr>');
+        });
+    });
+}
+
+$(document).ready(function() {
+    setTimeout(function() {
+        pollExportTable();
+        setInterval(pollExportTable, 3000);
+    }, 1000);
+});
+</script>
 @endsection
