@@ -91,18 +91,18 @@ class AppServiceProvider extends ServiceProvider
         $gtm_code = GoogleTagManager::where('status',1)->get();
         view()->share('gtm_code',$gtm_code);
 
-        try {
-            $recentExports = \App\Models\ExportJob::where('user_id', auth()->id())
-                ->latest()->limit(5)->get();
-            view()->share('recentExports', $recentExports);
-
-            $pendingExportCount = \App\Models\ExportJob::where('status', '!=', 'completed')
-                ->where('user_id', auth()->id())
-                ->count();
-            view()->share('pendingExportCount', $pendingExportCount);
-        } catch (\Exception $e) {
-            view()->share('recentExports', collect([]));
-            view()->share('pendingExportCount', 0);
-        }
+        view()->composer('backEnd.layouts.master', function ($view) {
+            if (auth()->check()) {
+                $completedExports = \App\Models\ExportJob::where('user_id', auth()->id())
+                    ->where('status', 'completed')
+                    ->latest()->limit(5)->get();
+                $completedExportCount = $completedExports->count();
+            } else {
+                $completedExports = collect([]);
+                $completedExportCount = 0;
+            }
+            $view->with('completedExports', $completedExports)
+                 ->with('completedExportCount', $completedExportCount);
+        });
     }
 }

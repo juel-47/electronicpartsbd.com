@@ -401,7 +401,7 @@ class ProductController extends Controller
     public function exportView()
     {
         $categories = Category::where('status', 1)->select('id', 'name')->get();
-        $exportJobs = ExportJob::where('user_id', auth()->id())->latest()->limit(20)->get();
+        $exportJobs = ExportJob::where('user_id', auth()->id())->latest()->paginate(20);
         return view('backEnd.product.export', compact('categories', 'exportJobs'));
     }
 
