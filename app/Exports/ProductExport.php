@@ -12,6 +12,7 @@ use Maatwebsite\Excel\Events\AfterSheet;
 class ProductExport implements FromQuery, WithHeadings, WithMapping, WithEvents
 {
     protected $query;
+    protected $rowNumber = 0;
 
     public function __construct($query = null)
     {
@@ -31,7 +32,7 @@ class ProductExport implements FromQuery, WithHeadings, WithMapping, WithEvents
     public function headings(): array
     {
         return [
-            'ID', 'Name', 'SKU', 'Product Code', 'Category', 'Subcategory', 'Childcategory',
+            'SL', 'ID', 'Name', 'SKU', 'Product Code', 'Category', 'Subcategory', 'Childcategory',
             'Brand', 'Purchase Price', 'Old Price', 'New Price', 'Stock', 'Unit',
             'Description', 'Specification', 'Tags', 'Status', 'Feature Product', 'Hot Deal',
             'Images', 'Slug', 'Created At'
@@ -40,6 +41,8 @@ class ProductExport implements FromQuery, WithHeadings, WithMapping, WithEvents
 
     public function map($product): array
     {
+        $this->rowNumber++;
+
         $images = $product->images->pluck('image')->map(function($img) {
             return url($img);
         })->implode(',');
@@ -57,6 +60,7 @@ class ProductExport implements FromQuery, WithHeadings, WithMapping, WithEvents
         $spec = trim($spec);
 
         return [
+            $this->rowNumber,
             $product->id,
             $product->name,
             $product->sku,
@@ -87,8 +91,8 @@ class ProductExport implements FromQuery, WithHeadings, WithMapping, WithEvents
         return [
             AfterSheet::class => function(AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $sheet->getStyle('A1:V1')->getFont()->setBold(true);
-                foreach (range('A', 'V') as $col) {
+                $sheet->getStyle('A1:W1')->getFont()->setBold(true);
+                foreach (range('A', 'W') as $col) {
                     $sheet->getColumnDimension($col)->setAutoSize(true);
                 }
             },

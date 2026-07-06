@@ -19,7 +19,7 @@
                 <div class="card-body">
                     @include('backEnd.layouts.validation-errors')
 
-                    <form action="{{route('products.export.queue')}}" method="POST">
+                    <form id="exportForm" action="{{route('products.export.queue')}}" method="POST">
                         @csrf
                         <div class="row">
                             <div class="col-md-4">
@@ -67,7 +67,7 @@
                                 </div>
                             </div>
                             <div class="col-md-8 d-flex align-items-end">
-                                <button type="submit" class="btn btn-success rounded-pill btn-lg">
+                                <button type="submit" id="exportBtn" class="btn btn-success rounded-pill btn-lg">
                                     <i class="fe-download"></i> Start Export
                                 </button>
                             </div>
@@ -100,7 +100,7 @@
                             </thead>
                             <tbody>
                                 @forelse($exportJobs as $job)
-                                <tr>
+                                <tr data-id="{{ $job->id }}">
                                     <td>{{ $job->filename }}</td>
                                     <td>{{ strtoupper($job->format) }}</td>
                                     <td>
@@ -126,6 +126,9 @@
                                         @else
                                             <span class="text-muted">Processing...</span>
                                         @endif
+                                        <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport({{ $job->id }}, this)">
+                                            <i class="fe-trash-2"></i>
+                                        </button>
                                     </td>
                                 </tr>
                                 @empty
@@ -144,4 +147,81 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('script')
+<script>
+document.getElementById('exportForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = document.getElementById('exportBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fe-loader"></i> Exporting...';
+
+    fetch(this.action, {
+        method: 'POST',
+        body: new FormData(this),
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(function(r){ return r.json(); }).then(function(res){
+        if(res.success){
+            var tbody = document.querySelector('.table tbody');
+            var empty = tbody.querySelector('td[colspan]');
+            if(empty) tbody.innerHTML = '';
+
+            var row = tbody.insertRow(0);
+            row.setAttribute('data-id', res.job.id);
+            row.innerHTML = '<td>'+res.job.filename+'</td>'+
+                '<td>'+res.job.format+'</td>'+
+                '<td><span class="badge bg-info">Processing</span></td>'+
+                '<td>-</td>'+
+                '<td>'+res.job.created_at+'</td>'+
+                '<td><span class="text-muted"><i class="fe-loader"></i> Processing...</span> <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport('+res.job.id+', this)"><i class="fe-trash-2"></i></button></td>';
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fe-download"></i> Start Export';
+    });
+});
+
+function deleteExport(id, btn) {
+    swal({
+        title: 'Are you sure?',
+        text: 'This export record will be permanently deleted.',
+        icon: 'warning',
+        buttons: true,
+        dangerMode: true,
+    }).then(function(willDelete){
+        if(willDelete){
+            fetch('{{ url("admin/products/export/delete") }}/'+id, {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'}})
+            .then(function(r){ return r.json(); }).then(function(res){
+                if(res.success) location.reload();
+            });
+        }
+    });
+}
+
+function pollTable(){
+    fetch("{{ route('admin.poll.notifications') }}").then(function(r){ return r.json(); }).then(function(res){
+        var lookup = {};
+        res.jobs.forEach(function(j){ lookup[j.id] = j; });
+        document.querySelectorAll('.table tbody tr').forEach(function(row){
+            var match = lookup[row.getAttribute('data-id')];
+            if(match){
+                var badge = match.status==='completed'?'bg-success':match.status==='processing'?'bg-info':'bg-warning';
+                var label = match.status.charAt(0).toUpperCase() + match.status.slice(1);
+                row.cells[2].innerHTML = '<span class="badge '+badge+'">'+label+'</span>';
+                row.cells[3].textContent = match.file_size;
+                var delBtn = '<button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport('+match.id+', this)"><i class="fe-trash-2"></i></button>';
+                if(match.status==='completed'){
+                    row.cells[5].innerHTML = '<a href="'+match.download_url+'" class="btn btn-sm btn-success"><i class="fe-download"></i> Download</a>'+delBtn;
+                }else if(match.status==='failed'){
+                    row.cells[5].innerHTML = '<span class="text-danger" title="'+(match.error||'')+'">Error</span>'+delBtn;
+                }else{
+                    row.cells[5].innerHTML = '<span class="text-muted"><i class="fe-loader"></i> Processing...</span>'+delBtn;
+                }
+            }
+        });
+    });
+}
+pollTable();
+setInterval(pollTable, 3000);
+</script>
 @endsection

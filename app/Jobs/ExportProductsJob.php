@@ -12,6 +12,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ExportProductsJob implements ShouldQueue
 {
@@ -50,7 +51,15 @@ class ExportProductsJob implements ShouldQueue
             $query->orderBy('id', 'DESC');
 
             $format = $this->exportJob->format;
-            $filename = $this->exportJob->filename;
+            $categoryName = 'all_products';
+            if (!empty($filters['category_id'])) {
+                $category = \App\Models\Category::find($filters['category_id']);
+                if ($category) {
+                    $categoryName = Str::slug($category->name);
+                }
+            }
+            $filename = $categoryName . '_' . now()->timestamp . '.' . $format;
+            $this->exportJob->update(['filename' => $filename]);
 
             $export = new ProductExport($query);
 

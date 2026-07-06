@@ -96,7 +96,8 @@ class AppServiceProvider extends ServiceProvider
                 $completedExports = \App\Models\ExportJob::where('user_id', auth()->id())
                     ->where('status', 'completed')
                     ->latest()->limit(5)->get();
-                $completedExportCount = $completedExports->count();
+                $completedExportCount = \App\Models\ExportJob::where('user_id', auth()->id())
+                    ->where('status', 'completed')->count();
             } else {
                 $completedExports = collect([]);
                 $completedExportCount = 0;

@@ -449,15 +449,41 @@ class ProductController extends Controller
 
     public function exportQueue(Request $request)
     {
+        $filters = $request->only(['category_id', 'status', 'stock_filter']);
+        $categoryName = 'all_products';
+        if (!empty($filters['category_id'])) {
+            $category = Category::find($filters['category_id']);
+            if ($category) {
+                $categoryName = Str::slug($category->name);
+            }
+        }
+        $filename = $categoryName . '_' . now()->timestamp . '.' . $request->format;
+
         $exportJob = ExportJob::create([
             'user_id' => auth()->id(),
-            'filename' => 'products_' . now()->timestamp . '.' . $request->format,
+            'filename' => $filename,
             'format' => $request->format,
-            'filters' => $request->only(['category_id', 'status', 'stock_filter']),
+            'filters' => $filters,
             'status' => 'pending',
         ]);
 
         ExportProductsJob::dispatch($exportJob);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Export started!',
+                'job' => [
+                    'id' => $exportJob->id,
+                    'filename' => $exportJob->filename,
+                    'format' => strtoupper($exportJob->format),
+                    'status' => 'pending',
+                    'file_size' => '-',
+                    'download_url' => '#',
+                    'created_at' => $exportJob->created_at->format('d M Y, h:i A'),
+                ],
+            ]);
+        }
 
         Toastr::success('Export started! Check bell icon for status.');
         return redirect()->back();
@@ -480,6 +506,44 @@ class ProductController extends Controller
             abort(404);
         }
         return Storage::download($job->file_path, $job->filename);
+    }
+
+    public function exportPoll()
+    {
+        $jobs = ExportJob::where('user_id', auth()->id())
+            ->latest()->limit(10)->get()->map(function ($job) {
+                return [
+                    'id' => $job->id,
+                    'filename' => $job->filename,
+                    'format' => strtoupper($job->format),
+                    'status' => $job->status,
+                    'file_size' => $job->file_size ? round($job->file_size / 1024, 2) . ' KB' : '-',
+                    'download_url' => $job->status === 'completed' ? route('products.export.download_file', $job->id) : '#',
+                    'created_at' => $job->created_at->format('d M Y, h:i A'),
+                    'error' => $job->error_message,
+                ];
+            });
+
+        $completedCount = ExportJob::where('user_id', auth()->id())
+            ->where('status', 'completed')->count();
+
+        $neworder = \App\Models\Order::where('order_status', '1')->count();
+
+        return response()->json([
+            'jobs' => $jobs,
+            'completed_count' => $completedCount,
+            'neworder' => $neworder,
+        ]);
+    }
+
+    public function exportDelete($id)
+    {
+        $job = ExportJob::findOrFail($id);
+        if ($job->file_path && Storage::exists($job->file_path)) {
+            Storage::delete($job->file_path);
+        }
+        $job->delete();
+        return response()->json(['success' => true]);
     }
 
     public function importPreview(Request $request)

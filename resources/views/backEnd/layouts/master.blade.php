@@ -83,6 +83,7 @@
                   </a>
                   @endforeach
 
+                  <div id="export-items">
                   @foreach($completedExports as $exp)
                   <a href="{{ route('products.export.download_file', $exp->id) }}" class="dropdown-item notify-item active">
                     <div class="notify-icon">
@@ -94,6 +95,7 @@
                     </p>
                   </a>
                   @endforeach
+                  </div>
                 </div>
 
                 <a href="{{route('products.export.view')}}" class="dropdown-item text-primary notify-item notify-all" style="width:auto;display:inline-block;">
@@ -825,6 +827,27 @@
                 }
             });
         });
+    </script>
+    <script>
+    function pollNotifications() {
+        fetch("{{ route('admin.poll.notifications') }}").then(function(r){ return r.json(); }).then(function(res){
+            var badge = res.neworder + res.completed_count;
+            document.querySelector('.noti-icon-badge').textContent = badge > 99 ? '99+' : badge;
+
+            var html = '';
+            res.jobs.forEach(function(job){
+                if(job.status === 'completed'){
+                    html += '<a href="'+job.download_url+'" class="dropdown-item notify-item active">'+
+                        '<div class="notify-icon"><i class="fe-check-circle text-success"></i></div>'+
+                        '<p class="notify-details">'+job.filename+'</p>'+
+                        '<p class="text-muted mb-0 user-msg"><small>Ready &middot; '+job.file_size+'</small></p></a>';
+                }
+            });
+            document.getElementById('export-items').innerHTML = html;
+        });
+    }
+    pollNotifications();
+    setInterval(pollNotifications, 5000);
     </script>
     @yield('script')
   </body>
