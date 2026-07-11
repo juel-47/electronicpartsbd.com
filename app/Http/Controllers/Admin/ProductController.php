@@ -507,6 +507,20 @@ class ProductController extends Controller
         return Storage::download($job->file_path, $job->filename);
     }
 
+    public function exportFilePreview($id)
+    {
+        $job = ExportJob::findOrFail($id);
+        if ($job->status !== 'completed') {
+            abort(404);
+        }
+        abort_unless($job->format === 'pdf', 404);
+
+        return response(Storage::get($job->file_path), 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$job->filename.'"',
+        ]);
+    }
+
     public function exportPoll()
     {
         $jobs = ExportJob::where('user_id', auth()->id())
@@ -518,6 +532,7 @@ class ProductController extends Controller
                     'status' => $job->status,
                     'file_size' => $job->file_size ? round($job->file_size / 1024, 2) . ' KB' : '-',
                     'download_url' => $job->status === 'completed' ? route('products.export.download_file', $job->id) : '#',
+                    'preview_url' => $job->status === 'completed' && $job->format === 'PDF' ? route('products.export.preview', $job->id) : '#',
                     'created_at' => $job->created_at->format('d M Y, h:i A'),
                     'error' => $job->error_message,
                 ];

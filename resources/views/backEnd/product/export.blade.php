@@ -118,6 +118,11 @@
                                     <td>{{ $job->created_at->format('d M Y, h:i A') }}</td>
                                     <td>
                                         @if($job->status === 'completed')
+                                            @if($job->format === 'pdf')
+                                                <a href="{{ route('products.export.preview', $job->id) }}" class="btn btn-sm btn-info" target="_blank">
+                                                    <i class="fe-eye"></i>
+                                                </a>
+                                            @endif
                                             <a href="{{ route('products.export.download_file', $job->id) }}" class="btn btn-sm btn-success">
                                                 <i class="fe-download"></i> Download
                                             </a>
@@ -211,8 +216,12 @@ function updateExportRow(job) {
             row.cells[3].textContent = job.file_size;
             var delBtn = '<button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport('+job.id+', this)"><i class="fe-trash-2"></i></button>';
             if(job.status==='completed'){
-                row.cells[5].innerHTML = '<a href="'+job.download_url+'" class="btn btn-sm btn-success"><i class="fe-download"></i> Download</a>'+delBtn;
-            }else{
+                var previewBtn = '';
+                if(job.format==='PDF'){
+                    previewBtn = '<a href="'+job.preview_url+'" class="btn btn-sm btn-info" target="_blank"><i class="fe-eye"></i></a> ';
+                }
+                row.cells[5].innerHTML = previewBtn + '<a href="'+job.download_url+'" class="btn btn-sm btn-success"><i class="fe-download"></i> Download</a>'+delBtn;
+            } else {
                 row.cells[5].innerHTML = '<span class="text-danger">Error</span>'+delBtn;
             }
             processingIds.delete(job.id.toString());
@@ -241,12 +250,16 @@ function updateExportRowFromNewJob(job) {
         if(empty) tbody.innerHTML = '';
         var row = tbody.insertRow(0);
         row.setAttribute('data-id', job.id);
+        var previewBtn = '';
+        if(job.format==='PDF'){
+            previewBtn = '<a href="'+job.preview_url+'" class="btn btn-sm btn-info" target="_blank"><i class="fe-eye"></i></a> ';
+        }
         row.innerHTML = '<td>'+job.filename+'</td>'+
             '<td>'+job.format+'</td>'+
             '<td><span class="badge bg-info">Processing</span></td>'+
             '<td>-</td>'+
             '<td>'+job.created_at+'</td>'+
-            '<td><span class="text-muted"><i class="fe-loader"></i> Processing...</span> <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport('+job.id+', this)"><i class="fe-trash-2"></i></button></td>';
+            '<td>'+previewBtn+'<span class="text-muted"><i class="fe-loader"></i> Processing...</span> <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport('+job.id+', this)"><i class="fe-trash-2"></i></button></td>';
         processingIds.add(job.id.toString());
     }
 }

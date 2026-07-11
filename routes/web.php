@@ -357,6 +357,7 @@ Route::group(['namespace'=>'Admin','middleware' => ['auth','lock','check_refer']
     Route::post('products/export/queue', [ProductController::class,'exportQueue'])->name('products.export.queue');
     Route::get('products/export/status/{id}', [ProductController::class,'exportStatus'])->name('products.export.status');
     Route::get('products/export/download/{id}', [ProductController::class,'exportFileDownload'])->name('products.export.download_file');
+    Route::get('products/export/preview/{id}', [ProductController::class,'exportFilePreview'])->name('products.export.preview');
     Route::post('products/export/delete/{id}', [ProductController::class,'exportDelete'])->name('products.export.delete');
     Route::get('poll/notifications', [ProductController::class,'exportPoll'])->name('admin.poll.notifications');
 
