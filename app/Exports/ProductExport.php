@@ -68,7 +68,7 @@ class ProductExport implements FromCollection, WithHeadings, WithEvents
             $product->status ? 'Active' : 'Inactive',
             $product->feature_product ? 'Yes' : 'No',
             $product->topsale ? 'Yes' : 'No',
-            $firstImage ? url($firstImage) : '',
+            '', // The Image column text is empty, image is drawn in AfterSheet
             $product->slug,
             $product->created_at?->format('Y-m-d H:i:s'),
         ];
