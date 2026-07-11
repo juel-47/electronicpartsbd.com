@@ -40,6 +40,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            table-layout: fixed;
         }
         thead {
             background-color: #1e3a8a;
@@ -154,9 +155,19 @@
                     @php
                         $firstImg = $product->images->first()?->image;
                         $imgPath = $firstImg ? public_path(preg_replace('/^public\//', '', $firstImg)) : null;
+                        $imgSrc = null;
+                        if($imgPath && file_exists($imgPath)) {
+                            try {
+                                // Resize on the fly to 40x40 and convert to base64 for incredibly fast PDF rendering
+                                $imgSrc = (string) \Image::make($imgPath)->fit(40, 40)->encode('data-url');
+                            } catch(\Exception $e) {
+                                // Fallback if image is corrupted
+                                $imgSrc = null;
+                            }
+                        }
                     @endphp
-                    @if($imgPath && file_exists($imgPath))
-                        <img src="{{ $imgPath }}" class="product-img" alt="">
+                    @if($imgSrc)
+                        <img src="{{ $imgSrc }}" class="product-img" alt="">
                     @else
                         <span style="color:#cbd5e1; font-size: 9px;">No Img</span>
                     @endif
