@@ -828,26 +828,66 @@
             });
         });
     </script>
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.js"></script>
     <script>
-    function pollNotifications() {
-        fetch("{{ route('admin.poll.notifications') }}").then(function(r){ return r.json(); }).then(function(res){
-            var badge = res.neworder + res.completed_count;
-            document.querySelector('.noti-icon-badge').textContent = badge > 99 ? '99+' : badge;
+    try {
+        window.echo = new Echo({
+            broadcaster: 'pusher',
+            key: '{{ config("broadcasting.connections.pusher.key") }}',
+            cluster: '{{ config("broadcasting.connections.pusher.options.cluster") }}',
+            forceTLS: true,
+            authEndpoint: '{{ url("broadcasting/auth") }}',
+            csrfToken: document.querySelector('meta[name="csrf-token"]')?.content
+        });
+        window.echo.private('exports.{{ auth()->id() }}')
+            .listen('.export.completed', function(e) {
+                addExportNotification(e.job);
+            });
+    } catch(e) {
+        console.warn('Pusher not available, using polling fallback');
+    }
 
-            var html = '';
-            res.jobs.forEach(function(job){
-                if(job.status === 'completed'){
-                    html += '<a href="'+job.download_url+'" class="dropdown-item notify-item active">'+
-                        '<div class="notify-icon"><i class="fe-check-circle text-success"></i></div>'+
-                        '<p class="notify-details">'+job.filename+'</p>'+
-                        '<p class="text-muted mb-0 user-msg"><small>Ready &middot; '+job.file_size+'</small></p></a>';
+    function addExportNotification(job) {
+        toastr.success('Export "' + job.filename + '" is ready!');
+        var badgeEl = document.querySelector('.noti-icon-badge');
+        var curr = parseInt(badgeEl.textContent) || 0;
+        badgeEl.textContent = curr + 1;
+
+        var html = '<a href="'+job.download_url+'" class="dropdown-item notify-item active">'+
+            '<div class="notify-icon"><i class="fe-check-circle text-success"></i></div>'+
+            '<p class="notify-details">'+job.filename+'</p>'+
+            '<p class="text-muted mb-0 user-msg"><small>Ready &middot; '+job.file_size+'</small></p></a>';
+        var container = document.getElementById('export-items');
+        if(container) container.insertAdjacentHTML('afterbegin', html);
+    }
+
+    setInterval(function(){
+        fetch('{{ route("admin.poll.notifications") }}')
+            .then(function(r){ return r.json(); })
+            .then(function(res){
+                var badgeEl = document.querySelector('.noti-icon-badge');
+                var expected = (res.neworder || 0) + (res.completed_count || 0);
+                if(badgeEl && parseInt(badgeEl.textContent) !== expected) {
+                    badgeEl.textContent = expected;
+                }
+                var container = document.getElementById('export-items');
+                if(container) {
+                    res.jobs.forEach(function(job){
+                        if(job.status === 'completed') {
+                            var exists = container.querySelector('a[href="'+job.download_url+'"]');
+                            if(!exists) {
+                                var html = '<a href="'+job.download_url+'" class="dropdown-item notify-item active">'+
+                                    '<div class="notify-icon"><i class="fe-check-circle text-success"></i></div>'+
+                                    '<p class="notify-details">'+job.filename+'</p>'+
+                                    '<p class="text-muted mb-0 user-msg"><small>Ready &middot; '+job.file_size+'</small></p></a>';
+                                container.insertAdjacentHTML('afterbegin', html);
+                            }
+                        }
+                    });
                 }
             });
-            document.getElementById('export-items').innerHTML = html;
-        });
-    }
-    pollNotifications();
-    setInterval(pollNotifications, 5000);
+    }, 3000);
     </script>
     @yield('script')
   </body>

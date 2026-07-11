@@ -3,64 +3,52 @@
 namespace App\Exports;
 
 use App\Models\Product;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
-class ProductExport implements FromQuery, WithHeadings, WithMapping, WithEvents
+class ProductExport implements FromCollection, WithHeadings, WithEvents
 {
-    protected $query;
-    protected $rowNumber = 0;
+    protected $products;
 
     public function __construct($query = null)
     {
-        $this->query = $query;
-    }
-
-    public function query()
-    {
-        if ($this->query) {
-            return $this->query;
+        if ($query instanceof \Illuminate\Database\Eloquent\Builder) {
+            $this->products = $query->with('images')->get();
+        } elseif ($query instanceof \Illuminate\Support\Collection) {
+            $this->products = $query;
+        } else {
+            $this->products = Product::with('category', 'subcategory', 'childcategory', 'brand', 'images')
+                ->where('is_deleted', 0)
+                ->orderBy('id', 'DESC')
+                ->get();
         }
-        return Product::with('category', 'subcategory', 'childcategory', 'brand', 'images')
-            ->where('is_deleted', 0)
-            ->orderBy('id', 'DESC');
     }
 
-    public function headings(): array
+    public function collection()
     {
-        return [
-            'SL', 'ID', 'Name', 'SKU', 'Product Code', 'Category', 'Subcategory', 'Childcategory',
-            'Brand', 'Purchase Price', 'Old Price', 'New Price', 'Stock', 'Unit',
-            'Description', 'Specification', 'Tags', 'Status', 'Feature Product', 'Hot Deal',
-            'Images', 'Slug', 'Created At'
-        ];
+        return $this->products->map(function ($product) {
+            return $this->mapProduct($product);
+        });
     }
 
-    public function map($product): array
+    protected function mapProduct($product)
     {
-        $this->rowNumber++;
+        static $rowNumber = 0;
+        $rowNumber++;
 
-        $images = $product->images->pluck('image')->map(function($img) {
-            return url($img);
-        })->implode(',');
+        $firstImage = $product->images->first()?->image;
 
-        $desc = $product->description;
-        $desc = str_replace('&nbsp;', ' ', $desc ?? '');
-        $desc = html_entity_decode(strip_tags($desc), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $desc = preg_replace('/\s+/', ' ', $desc);
-        $desc = trim($desc);
+        $desc = str_replace('&nbsp;', ' ', strip_tags($product->description ?? ''));
+        $desc = trim(preg_replace('/\s+/', ' ', html_entity_decode($desc, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
 
-        $spec = $product->specification;
-        $spec = str_replace('&nbsp;', ' ', $spec ?? '');
-        $spec = html_entity_decode(strip_tags($spec), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $spec = preg_replace('/\s+/', ' ', $spec);
-        $spec = trim($spec);
+        $spec = str_replace('&nbsp;', ' ', strip_tags($product->specification ?? ''));
+        $spec = trim(preg_replace('/\s+/', ' ', html_entity_decode($spec, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
 
         return [
-            $this->rowNumber,
+            $rowNumber,
             $product->id,
             $product->name,
             $product->sku,
@@ -80,9 +68,19 @@ class ProductExport implements FromQuery, WithHeadings, WithMapping, WithEvents
             $product->status ? 'Active' : 'Inactive',
             $product->feature_product ? 'Yes' : 'No',
             $product->topsale ? 'Yes' : 'No',
-            $images,
+            $firstImage ? url($firstImage) : '',
             $product->slug,
             $product->created_at?->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    public function headings(): array
+    {
+        return [
+            'SL', 'ID', 'Name', 'SKU', 'Product Code', 'Category', 'Subcategory', 'Childcategory',
+            'Brand', 'Purchase Price', 'Old Price', 'New Price', 'Stock', 'Unit',
+            'Description', 'Specification', 'Tags', 'Status', 'Feature Product', 'Hot Deal',
+            'Image', 'Slug', 'Created At'
         ];
     }
 
@@ -94,6 +92,28 @@ class ProductExport implements FromQuery, WithHeadings, WithMapping, WithEvents
                 $sheet->getStyle('A1:W1')->getFont()->setBold(true);
                 foreach (range('A', 'W') as $col) {
                     $sheet->getColumnDimension($col)->setAutoSize(true);
+                }
+                $sheet->getColumnDimension('U')->setWidth(30);
+
+                foreach ($this->products as $index => $product) {
+                    $row = $index + 2;
+                    $firstImage = $product->images->first()?->image;
+                    if (!$firstImage) continue;
+
+                    $imagePath = preg_replace('/^public\//', '', $firstImage);
+                    $fullPath = public_path($imagePath);
+                    if (!file_exists($fullPath)) continue;
+
+                    $drawing = new Drawing();
+                    $drawing->setName('Product Image');
+                    $drawing->setPath($fullPath);
+                    $drawing->setHeight(60);
+                    $drawing->setCoordinates('U' . $row);
+                    $drawing->setOffsetX(5);
+                    $drawing->setOffsetY(5);
+                    $drawing->setWorksheet($sheet);
+
+                    $sheet->getRowDimension($row)->setRowHeight(70);
                 }
             },
         ];

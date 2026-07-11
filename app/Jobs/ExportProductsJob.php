@@ -13,6 +13,8 @@ use Illuminate\Queue\SerializesModels;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Events\ExportCompleted;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ExportProductsJob implements ShouldQueue
 {
@@ -33,7 +35,7 @@ class ExportProductsJob implements ShouldQueue
 
         try {
             $filters = $this->exportJob->filters;
-            $query = Product::with('category', 'subcategory', 'childcategory', 'brand')
+            $query = Product::with('category', 'subcategory', 'childcategory', 'brand', 'images')
                 ->where('is_deleted', 0);
 
             if (!empty($filters['category_id'])) {
@@ -61,20 +63,31 @@ class ExportProductsJob implements ShouldQueue
             $filename = $categoryName . '_' . now()->timestamp . '.' . $format;
             $this->exportJob->update(['filename' => $filename]);
 
-            $export = new ProductExport($query);
-
-            Excel::store($export, 'exports/' . $filename, 'local');
+            if ($format === 'pdf') {
+                ini_set('memory_limit', '1024M');
+                set_time_limit(600);
+                $products = $query->get();
+                $pdf = Pdf::loadView('backEnd.product.export_pdf', compact('products'));
+                $pdf->setPaper('a4', 'landscape');
+                Storage::put('exports/' . $filename, $pdf->output());
+            } else {
+                $export = new ProductExport($query);
+                Excel::store($export, 'exports/' . $filename, 'local');
+            }
 
             $this->exportJob->update([
                 'status' => 'completed',
                 'file_path' => 'exports/' . $filename,
                 'file_size' => Storage::size('exports/' . $filename),
             ]);
+
+            event(new ExportCompleted($this->exportJob));
         } catch (\Exception $e) {
             $this->exportJob->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
             ]);
+            event(new ExportCompleted($this->exportJob));
         }
     }
 }

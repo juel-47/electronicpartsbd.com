@@ -427,8 +427,7 @@ class ProductController extends Controller
         if ($format === 'pdf') {
             ini_set('memory_limit', '1024M');
             set_time_limit(300);
-            // Only load what's needed for the PDF (no images — keeps PDF small and fast)
-            $products = $query->with(['category', 'brand'])->get();
+            $products = $query->with(['category', 'brand', 'images'])->get();
             $pdf = Pdf::loadView('backEnd.product.export_pdf', compact('products'));
             $pdf->setPaper('a4', 'landscape');
             $pdfContent = $pdf->output();

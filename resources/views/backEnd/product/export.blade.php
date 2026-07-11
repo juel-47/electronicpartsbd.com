@@ -163,18 +163,7 @@ document.getElementById('exportForm').addEventListener('submit', function(e){
         headers: {'X-Requested-With': 'XMLHttpRequest'}
     }).then(function(r){ return r.json(); }).then(function(res){
         if(res.success){
-            var tbody = document.querySelector('.table tbody');
-            var empty = tbody.querySelector('td[colspan]');
-            if(empty) tbody.innerHTML = '';
-
-            var row = tbody.insertRow(0);
-            row.setAttribute('data-id', res.job.id);
-            row.innerHTML = '<td>'+res.job.filename+'</td>'+
-                '<td>'+res.job.format+'</td>'+
-                '<td><span class="badge bg-info">Processing</span></td>'+
-                '<td>-</td>'+
-                '<td>'+res.job.created_at+'</td>'+
-                '<td><span class="text-muted"><i class="fe-loader"></i> Processing...</span> <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport('+res.job.id+', this)"><i class="fe-trash-2"></i></button></td>';
+            updateExportRowFromNewJob(res.job);
         }
         btn.disabled = false;
         btn.innerHTML = '<i class="fe-download"></i> Start Export';
@@ -198,30 +187,68 @@ function deleteExport(id, btn) {
     });
 }
 
-function pollTable(){
-    fetch("{{ route('admin.poll.notifications') }}").then(function(r){ return r.json(); }).then(function(res){
-        var lookup = {};
-        res.jobs.forEach(function(j){ lookup[j.id] = j; });
-        document.querySelectorAll('.table tbody tr').forEach(function(row){
-            var match = lookup[row.getAttribute('data-id')];
-            if(match){
-                var badge = match.status==='completed'?'bg-success':match.status==='processing'?'bg-info':'bg-warning';
-                var label = match.status.charAt(0).toUpperCase() + match.status.slice(1);
-                row.cells[2].innerHTML = '<span class="badge '+badge+'">'+label+'</span>';
-                row.cells[3].textContent = match.file_size;
-                var delBtn = '<button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport('+match.id+', this)"><i class="fe-trash-2"></i></button>';
-                if(match.status==='completed'){
-                    row.cells[5].innerHTML = '<a href="'+match.download_url+'" class="btn btn-sm btn-success"><i class="fe-download"></i> Download</a>'+delBtn;
-                }else if(match.status==='failed'){
-                    row.cells[5].innerHTML = '<span class="text-danger" title="'+(match.error||'')+'">Error</span>'+delBtn;
-                }else{
-                    row.cells[5].innerHTML = '<span class="text-muted"><i class="fe-loader"></i> Processing...</span>'+delBtn;
-                }
-            }
+if (window.echo) {
+    window.echo.private('exports.{{ auth()->id() }}')
+        .listen('.export.completed', function(e) {
+            updateExportRow(e.job);
         });
+}
+
+var processingIds = new Set();
+document.querySelectorAll('.table tbody tr').forEach(function(row){
+    var badge = row.cells[2]?.querySelector('.badge');
+    if(badge && (badge.classList.contains('bg-info') || badge.classList.contains('bg-warning'))){
+        processingIds.add(row.getAttribute('data-id'));
+    }
+});
+
+function updateExportRow(job) {
+    document.querySelectorAll('.table tbody tr').forEach(function(row){
+        if(row.getAttribute('data-id') == job.id){
+            var badge = job.status==='completed'?'bg-success':'bg-danger';
+            var label = job.status.charAt(0).toUpperCase() + job.status.slice(1);
+            row.cells[2].innerHTML = '<span class="badge '+badge+'">'+label+'</span>';
+            row.cells[3].textContent = job.file_size;
+            var delBtn = '<button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport('+job.id+', this)"><i class="fe-trash-2"></i></button>';
+            if(job.status==='completed'){
+                row.cells[5].innerHTML = '<a href="'+job.download_url+'" class="btn btn-sm btn-success"><i class="fe-download"></i> Download</a>'+delBtn;
+            }else{
+                row.cells[5].innerHTML = '<span class="text-danger">Error</span>'+delBtn;
+            }
+            processingIds.delete(job.id.toString());
+        }
     });
 }
-pollTable();
-setInterval(pollTable, 3000);
+
+setInterval(function(){
+    if(processingIds.size === 0) return;
+    fetch('{{ route("admin.poll.notifications") }}')
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            res.jobs.forEach(function(job){
+                if(processingIds.has(job.id.toString()) && job.status !== 'processing' && job.status !== 'pending'){
+                    updateExportRow(job);
+                }
+            });
+        });
+}, 5000);
+
+function updateExportRowFromNewJob(job) {
+    var tbody = document.querySelector('.table tbody');
+    var existing = tbody.querySelector('tr[data-id="'+job.id+'"]');
+    if(!existing) {
+        var empty = tbody.querySelector('td[colspan]');
+        if(empty) tbody.innerHTML = '';
+        var row = tbody.insertRow(0);
+        row.setAttribute('data-id', job.id);
+        row.innerHTML = '<td>'+job.filename+'</td>'+
+            '<td>'+job.format+'</td>'+
+            '<td><span class="badge bg-info">Processing</span></td>'+
+            '<td>-</td>'+
+            '<td>'+job.created_at+'</td>'+
+            '<td><span class="text-muted"><i class="fe-loader"></i> Processing...</span> <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExport('+job.id+', this)"><i class="fe-trash-2"></i></button></td>';
+        processingIds.add(job.id.toString());
+    }
+}
 </script>
 @endsection

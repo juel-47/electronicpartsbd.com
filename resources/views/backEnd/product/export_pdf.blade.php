@@ -28,10 +28,14 @@
         Total: {{ $products->count() }} products
     </p>
 
+    <style>
+        .product-img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+    </style>
     <table>
         <thead>
             <tr>
                 <th class="sl">#</th>
+                <th>Image</th>
                 <th>Name</th>
                 <th>SKU / Code</th>
                 <th>Category</th>
@@ -47,6 +51,17 @@
             @foreach($products as $i => $product)
             <tr>
                 <td class="sl">{{ $i + 1 }}</td>
+                <td>
+                    @php
+                        $firstImg = $product->images->first()?->image;
+                        $imgPath = $firstImg ? public_path(preg_replace('/^public\//', '', $firstImg)) : null;
+                    @endphp
+                    @if($imgPath && file_exists($imgPath))
+                        <img src="{{ $imgPath }}" class="product-img" alt="">
+                    @else
+                        <span style="color:#ccc">No img</span>
+                    @endif
+                </td>
                 <td>{{ $product->name }}</td>
                 <td>{{ $product->sku ?: ($product->product_code ?: '-') }}</td>
                 <td>{{ $product->category?->name ?? '-' }}</td>
